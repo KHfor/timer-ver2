@@ -60,9 +60,6 @@ body {
 
     touch-action: manipulation;
 
-    /*
-     * キーボードフォーカスを受け取れるようにする
-     */
     outline: none;
 }
 
@@ -277,6 +274,7 @@ button {
     color: #3666FF;
 }
 
+
 .running-number.stopped-low {
     color: #FF6633;
 }
@@ -447,6 +445,7 @@ button {
 const SUPABASE_URL =
     "https://hkogobchcvryyzuelfxw.supabase.co";
 
+
 const SUPABASE_KEY =
     "sb_publishable_anNXiP87LyAP-HUE-5tlGQ_ia6q2xEE";
 
@@ -465,23 +464,30 @@ const db =
 const title =
     document.getElementById("title");
 
+
 const hint =
     document.getElementById("hint");
+
 
 const timers =
     document.getElementById("timers");
 
+
 const cards =
     document.querySelectorAll(".card");
+
 
 const runningScreen =
     document.getElementById("runningScreen");
 
+
 const runningNumber =
     document.getElementById("runningNumber");
 
+
 const audioStart =
     document.getElementById("audioStart");
+
 
 const bgm =
     document.getElementById("bgm");
@@ -499,21 +505,374 @@ let timerInterval = null;
 
 
 /* =====================================================
+   localStorageログキュー
+===================================================== */
+
+const PENDING_LOGS_KEY =
+    "timer_pending_logs_v1";
+
+
+let flushingLogs = false;
+
+
+/*
+ * localStorageから
+ * 未送信ログを取得
+ */
+function getPendingLogs() {
+
+    try {
+
+        const raw =
+            localStorage.getItem(
+                PENDING_LOGS_KEY
+            );
+
+
+        if (!raw) {
+            return [];
+        }
+
+
+        const parsed =
+            JSON.parse(raw);
+
+
+        return Array.isArray(parsed)
+            ? parsed
+            : [];
+
+    } catch (error) {
+
+        console.error(
+            "Pending log read error:",
+            error
+        );
+
+        return [];
+
+    }
+
+}
+
+
+/*
+ * localStorageへ
+ * 未送信ログを書き込む
+ */
+function setPendingLogs(logs) {
+
+    try {
+
+        localStorage.setItem(
+            PENDING_LOGS_KEY,
+            JSON.stringify(logs)
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "Pending log write error:",
+            error
+        );
+
+        return false;
+
+    }
+
+}
+
+
+/*
+ * 新しいログを
+ * localStorageへ追加
+ */
+function addPendingLog(log) {
+
+    const logs =
+        getPendingLogs();
+
+
+    logs.push(log);
+
+
+    return setPendingLogs(
+        logs
+    );
+
+}
+
+
+/*
+ * client_log_idを作成
+ */
+function createClientLogId() {
+
+    if (
+        window.crypto &&
+        typeof window.crypto.randomUUID ===
+            "function"
+    ) {
+
+        return window.crypto.randomUUID();
+
+    }
+
+
+    return (
+        Date.now()
+        +
+        "-"
+        +
+        Math.random()
+            .toString(16)
+            .slice(2)
+        +
+        "-"
+        +
+        Math.random()
+            .toString(16)
+            .slice(2)
+    );
+
+}
+
+
+/*
+ * Supabaseの
+ * 重複エラー判定
+ */
+function isDuplicateError(error) {
+
+    if (!error) {
+        return false;
+    }
+
+
+    return (
+        error.code === "23505"
+        ||
+        /duplicate|unique/i.test(
+            error.message || ""
+        )
+    );
+
+}
+
+
+/*
+ * localStorageに残っている
+ * ログをSupabaseへ送信
+ */
+async function flushPendingLogs() {
+
+    /*
+     * 同時実行防止
+     */
+    if (flushingLogs) {
+        return;
+    }
+
+
+    flushingLogs = true;
+
+
+    try {
+
+        const pending =
+            getPendingLogs();
+
+
+        if (
+            pending.length === 0
+        ) {
+
+            return;
+
+        }
+
+
+        const remaining = [];
+
+
+        for (
+            let i = 0;
+            i < pending.length;
+            i++
+        ) {
+
+            const log =
+                pending[i];
+
+
+            const {
+                error
+            } = await db
+                .from("timer_logs")
+                .insert(log);
+
+
+            /*
+             * 成功
+             *
+             * または
+             * すでに同じIDが存在する場合
+             *
+             * → localStorageから削除
+             */
+            if (
+                !error ||
+                isDuplicateError(error)
+            ) {
+
+                continue;
+
+            }
+
+
+            /*
+             * 通信失敗などの場合
+             *
+             * ここから先のログも
+             * localStorageに残す
+             */
+            console.error(
+                "Pending log upload failed:",
+                error
+            );
+
+
+            remaining.push(
+                ...pending.slice(i)
+            );
+
+
+            break;
+
+        }
+
+
+        setPendingLogs(
+            remaining
+        );
+
+    } catch (error) {
+
+        /*
+         * ネットワークエラー等では
+         * アラートを出さない
+         */
+        console.error(
+            "Pending log flush error:",
+            error
+        );
+
+    } finally {
+
+        flushingLogs = false;
+
+    }
+
+}
+
+
+/* =====================================================
+   localStorageログ自動送信
+===================================================== */
+
+
+/*
+ * ページ読み込み時
+ */
+window.addEventListener(
+    "load",
+    () => {
+
+        flushPendingLogs();
+
+    }
+);
+
+
+/*
+ * ネットワーク復帰時
+ */
+window.addEventListener(
+    "online",
+    () => {
+
+        flushPendingLogs();
+
+    }
+);
+
+
+/*
+ * ブラウザへ戻ったとき
+ */
+window.addEventListener(
+    "focus",
+    () => {
+
+        flushPendingLogs();
+
+    }
+);
+
+
+/*
+ * ページが再表示されたとき
+ */
+document.addEventListener(
+    "visibilitychange",
+    () => {
+
+        if (!document.hidden) {
+
+            flushPendingLogs();
+
+        }
+
+    }
+);
+
+
+/*
+ * 30秒ごと
+ */
+setInterval(
+    () => {
+
+        flushPendingLogs();
+
+    },
+    30000
+);
+
+
+/*
+ * スクリプト読み込み直後にも
+ * 一度送信を試す
+ */
+flushPendingLogs();
+
+
+/* =====================================================
    キーボードフォーカス対策
 ===================================================== */
 
-/*
- * bodyをフォーカス可能にする
- */
 function restoreKeyboardFocus() {
 
-    /*
-     * ボタンや入力欄を操作中の場合は
-     * 無理にフォーカスを奪わない
-     */
     const activeElement =
         document.activeElement;
 
+
+    /*
+     * 入力欄を操作中の場合は
+     * フォーカスを奪わない
+     */
     if (
         activeElement &&
         (
@@ -522,11 +881,23 @@ function restoreKeyboardFocus() {
             activeElement.tagName === "SELECT"
         )
     ) {
+
         return;
+
     }
 
 
     try {
+
+        /*
+         * bodyを確実に
+         * フォーカス可能にする
+         */
+        document.body.setAttribute(
+            "tabindex",
+            "0"
+        );
+
 
         document.body.focus({
             preventScroll: true
@@ -555,7 +926,7 @@ window.addEventListener(
 
 
 /*
- * ブラウザやアプリに戻ってきたとき
+ * ブラウザやアプリに戻ったとき
  */
 window.addEventListener(
     "focus",
@@ -568,7 +939,8 @@ window.addEventListener(
 
 
 /*
- * Safari / iOS等でページが再表示されたとき
+ * Safari / iOS等で
+ * ページが再表示されたとき
  */
 document.addEventListener(
     "visibilitychange",
@@ -592,8 +964,7 @@ document.addEventListener(
 
 
 /*
- * 画面をタップ・クリックした後も
- * キーボード入力を受け取れるようにする
+ * 画面タップ後
  */
 document.addEventListener(
     "pointerdown",
@@ -620,10 +991,16 @@ document.addEventListener(
 ===================================================== */
 
 function formatTime(seconds) {
-    const negative = seconds < 0;
-    const absoluteSeconds = Math.abs(
-        Math.floor(seconds)
-    );
+
+    const negative =
+        seconds < 0;
+
+
+    const absoluteSeconds =
+        Math.abs(
+            Math.floor(seconds)
+        );
+
 
     const minutes =
         Math.floor(
@@ -632,14 +1009,19 @@ function formatTime(seconds) {
             .toString()
             .padStart(2, "0");
 
+
     const secs =
-        (absoluteSeconds % 60)
+        (
+            absoluteSeconds % 60
+        )
             .toString()
             .padStart(2, "0");
+
 
     return negative
         ? `-${minutes}:${secs}`
         : `${minutes}:${secs}`;
+
 }
 
 
@@ -673,7 +1055,9 @@ async function playBGM() {
 
         bgm.volume = 1.0;
 
+
         await bgm.play();
+
 
         audioStart.classList.add(
             "hidden"
@@ -697,7 +1081,9 @@ audioStart.addEventListener(
 
         event.stopPropagation();
 
+
         await playBGM();
+
 
         restoreKeyboardFocus();
 
@@ -767,9 +1153,11 @@ function startTimer(cardIndex) {
         "hidden"
     );
 
+
     hint.classList.add(
         "hidden"
     );
+
 
     timers.classList.add(
         "hidden"
@@ -782,10 +1170,14 @@ function startTimer(cardIndex) {
 
 
     runningNumber.textContent =
-        formatTime(seconds);
+        formatTime(
+            seconds
+        );
 
 
-        // カウント中は常に通常色
+    /*
+     * 実行中は蛍光グリーン
+     */
     runningNumber.classList.remove(
         "stopped-high",
         "stopped-low"
@@ -813,11 +1205,11 @@ function startTimer(cardIndex) {
 
                 activeTimer.remaining--;
 
+
                 runningNumber.textContent =
                     formatTime(
                         activeTimer.remaining
                     );
-
 
             },
             1000
@@ -826,7 +1218,7 @@ function startTimer(cardIndex) {
 }
 
 
-      /* =====================================================
+/* =====================================================
    DEBUGタイマー
    Tキー → 15秒
 ===================================================== */
@@ -855,9 +1247,11 @@ function startDebugTimer() {
         "hidden"
     );
 
+
     hint.classList.add(
         "hidden"
     );
+
 
     timers.classList.add(
         "hidden"
@@ -870,13 +1264,14 @@ function startDebugTimer() {
 
 
     runningNumber.textContent =
-        formatTime(15);
+        formatTime(
+            15
+        );
 
 
     /*
-     * 実行中は通常の蛍光グリーン
+     * 実行中は蛍光グリーン
      */
-
     runningNumber.classList.remove(
         "stopped-high",
         "stopped-low"
@@ -895,7 +1290,9 @@ function startDebugTimer() {
                 }
 
 
-                if (activeTimer.paused) {
+                if (
+                    activeTimer.paused
+                ) {
                     return;
                 }
 
@@ -914,6 +1311,7 @@ function startDebugTimer() {
 
 }
 
+
 /* =====================================================
    一時停止 / 再開
 ===================================================== */
@@ -929,12 +1327,14 @@ function togglePause() {
         !activeTimer.paused;
 
 
-    if (activeTimer.paused) {
+    if (
+        activeTimer.paused
+    ) {
 
         /*
-         * 一時停止した瞬間の残り時間で色を決定
+         * 30秒以上
+         * → 蛍光ブルー
          */
-
         if (
             activeTimer.remaining >= 30
         ) {
@@ -943,15 +1343,23 @@ function togglePause() {
                 "stopped-low"
             );
 
+
             runningNumber.classList.add(
                 "stopped-high"
             );
 
-        } else {
+        }
+
+        /*
+         * 30秒未満
+         * → オレンジ
+         */
+        else {
 
             runningNumber.classList.remove(
                 "stopped-high"
             );
+
 
             runningNumber.classList.add(
                 "stopped-low"
@@ -959,12 +1367,14 @@ function togglePause() {
 
         }
 
-    } else {
+    }
+
+    else {
 
         /*
-         * 再開したら通常色に戻す
+         * 再開
+         * → 蛍光グリーン
          */
-
         runningNumber.classList.remove(
             "stopped-high",
             "stopped-low"
@@ -976,7 +1386,7 @@ function togglePause() {
 
 
 /* =====================================================
-   Supabaseへログ保存
+   ログ保存
 ===================================================== */
 
 async function saveLog() {
@@ -987,14 +1397,14 @@ async function saveLog() {
 
 
     const label =
-    activeTimer.cardIndex === null
-        ? "DEBUG"
-        : cards[
-            activeTimer.cardIndex
-        ]
-        .querySelector("h2")
-        .textContent
-        .trim();
+        activeTimer.cardIndex === null
+            ? "DEBUG"
+            : cards[
+                activeTimer.cardIndex
+            ]
+            .querySelector("h2")
+            .textContent
+            .trim();
 
 
     const timerName =
@@ -1013,49 +1423,64 @@ async function saveLog() {
         );
 
 
+    /*
+     * 一意のID
+     */
+    const clientLogId =
+        createClientLogId();
+
+
+    /*
+     * 1回分のログ
+     */
+    const log = {
+
+        client_log_id:
+            clientLogId,
+
+        label:
+            label,
+
+        remaining_seconds:
+            remaining,
+
+        remaining_formatted:
+            formatted,
+
+        stopped_at:
+            new Date().toISOString()
+
+    };
+
+
     console.log(
-        "Saving timer log:",
+        "Queueing timer log:",
         {
             timerName,
             label,
             remaining,
-            formatted
+            formatted,
+            clientLogId
         }
     );
 
 
-    const {
-        error
-    } = await db
-        .from("timer_logs")
-        .insert({
-
-            label:
-                label,
-
-            remaining_seconds:
-                remaining,
-
-            remaining_formatted:
-                formatted,
-
-            stopped_at:
-                new Date().toISOString()
-
-        });
-
-
-    if (error) {
-
-        console.error(
-            "Supabase INSERT ERROR:",
-            error
+    /*
+     * まずlocalStorageへ保存
+     *
+     * ここが成功すれば、
+     * 通信失敗してもログは残る。
+     */
+    const queued =
+        addPendingLog(
+            log
         );
 
+
+    if (!queued) {
+
         alert(
-            "ログの保存に失敗しました。\n\n"
-            +
-            error.message
+            "ログを端末に一時保存できませんでした。"
         );
 
         return false;
@@ -1063,13 +1488,29 @@ async function saveLog() {
     }
 
 
-    console.log(
-        "Supabase INSERT SUCCESS:",
-        timerName
-    );
+    /*
+     * 保存直後に
+     * Supabase送信を試す
+     */
+    await flushPendingLogs();
 
 
-    return true;
+    /*
+     * まだlocalStorageに残っているか確認
+     */
+    const stillPending =
+        getPendingLogs().some(
+            (item) =>
+                item.client_log_id ===
+                clientLogId
+        );
+
+
+    /*
+     * 残っていなければ
+     * Supabaseへの保存成功
+     */
+    return !stillPending;
 
 }
 
@@ -1078,7 +1519,7 @@ async function saveLog() {
    終了
 ===================================================== */
 
-async function finishTimer() {
+function finishTimer() {
 
     if (!activeTimer) {
         return;
@@ -1089,10 +1530,23 @@ async function finishTimer() {
         timerInterval
     );
 
+
     timerInterval = null;
 
 
-    await saveLog();
+    /*
+     * ログ保存を待たない
+     */
+    saveLog().catch(
+        (error) => {
+
+            console.error(
+                "finishTimer saveLog error:",
+                error
+            );
+
+        }
+    );
 
 
     setTimeout(
@@ -1111,7 +1565,7 @@ async function finishTimer() {
    キャンセル
 ===================================================== */
 
-async function cancelTimer() {
+function cancelTimer() {
 
     if (!activeTimer) {
         return;
@@ -1122,12 +1576,30 @@ async function cancelTimer() {
         timerInterval
     );
 
+
     timerInterval = null;
 
 
-    await saveLog();
+    /*
+     * ログをまずlocalStorageへ保存。
+     *
+     * Supabaseへの通信完了は待たない。
+     */
+    saveLog().catch(
+        (error) => {
+
+            console.error(
+                "cancelTimer saveLog error:",
+                error
+            );
+
+        }
+    );
 
 
+    /*
+     * すぐ初期画面へ戻る。
+     */
     returnToInitial();
 
 }
@@ -1142,6 +1614,7 @@ function returnToInitial() {
     clearInterval(
         timerInterval
     );
+
 
     timerInterval = null;
 
@@ -1174,9 +1647,11 @@ function returnToInitial() {
         "hidden"
     );
 
+
     hint.classList.remove(
         "hidden"
     );
+
 
     timers.classList.remove(
         "hidden"
@@ -1187,8 +1662,14 @@ function returnToInitial() {
 
 
     /*
-     * 初期画面に戻ったあとも
-     * キーボードフォーカスを復帰
+     * 初期画面に戻った瞬間に
+     * フォーカスを復帰
+     */
+    restoreKeyboardFocus();
+
+
+    /*
+     * Safari / iPad向け予備
      */
     setTimeout(
         () => {
@@ -1209,7 +1690,6 @@ function returnToInitial() {
 cards.forEach(
     (card, index) => {
 
-
         card.addEventListener(
             "click",
             (event) => {
@@ -1220,6 +1700,7 @@ cards.forEach(
 
 
                 selected = index;
+
 
                 updateSelection();
 
@@ -1253,6 +1734,7 @@ cards.forEach(
 
                 selected = index;
 
+
                 updateSelection();
 
 
@@ -1274,18 +1756,11 @@ cards.forEach(
    キーボード操作
 ===================================================== */
 
-/*
- * documentではなくwindowで受け取る
- *
- * これによりページ内の特定要素に
- * フォーカスが移っていても
- * キーイベントを拾いやすくする
- */
 window.addEventListener(
     "keydown",
     async (event) => {
 
-                console.log(
+        console.log(
             "KEY:",
             event.code,
             "activeTimer:",
@@ -1293,51 +1768,36 @@ window.addEventListener(
         );
 
 
-       console.log(
-    "KEY:",
-    event.code,
-    "activeTimer:",
-    !!activeTimer
-);
+        /* =========================================
+           T
+           DEBUG 15秒タイマー
+        ========================================= */
+
+        if (
+            event.code === "KeyT"
+        ) {
+
+            event.preventDefault();
 
 
-/* =========================================
-   T
-   DEBUG 15秒タイマー
-========================================= */
-
-if (
-    event.code === "KeyT"
-) {
-
-    event.preventDefault();
+            if (event.repeat) {
+                return;
+            }
 
 
-    /*
-     * キーリピートによる
-     * 多重起動を防止
-     */
-
-    if (event.repeat) {
-        return;
-    }
+            if (activeTimer) {
+                return;
+            }
 
 
-    /*
-     * 実行中なら何もしない
-     */
-
-    if (activeTimer) {
-        return;
-    }
+            startDebugTimer();
 
 
-    startDebugTimer();
+            return;
 
-    return;
-}
+        }
 
-          
+
         /* =========================================
            J
         ========================================= */
@@ -1350,6 +1810,7 @@ if (
 
                 selected--;
 
+
                 if (
                     selected < 0
                 ) {
@@ -1359,13 +1820,17 @@ if (
 
                 }
 
+
                 updateSelection();
 
             }
 
+
             event.preventDefault();
 
+
             return;
+
         }
 
 
@@ -1381,6 +1846,7 @@ if (
 
                 selected++;
 
+
                 if (
                     selected >=
                     cards.length
@@ -1390,13 +1856,17 @@ if (
 
                 }
 
+
                 updateSelection();
 
             }
 
+
             event.preventDefault();
 
+
             return;
+
         }
 
 
@@ -1408,17 +1878,9 @@ if (
             event.code === "Space"
         ) {
 
-            /*
-             * Spaceの標準動作
-             * （ボタンのクリック等）を止める
-             */
             event.preventDefault();
 
 
-            /*
-             * キーリピートによる
-             * 多重処理を防止
-             */
             if (event.repeat) {
                 return;
             }
@@ -1427,6 +1889,7 @@ if (
             if (!activeTimer) {
 
                 await playBGM();
+
 
                 startTimer(
                     selected
@@ -1442,6 +1905,7 @@ if (
 
 
             return;
+
         }
 
 
@@ -1456,10 +1920,6 @@ if (
             event.preventDefault();
 
 
-            /*
-             * キーリピートによる
-             * 多重キャンセルを防止
-             */
             if (event.repeat) {
                 return;
             }
@@ -1467,12 +1927,19 @@ if (
 
             if (activeTimer) {
 
-                await cancelTimer();
+                /*
+                 * awaitしない
+                 *
+                 * ログ保存を待たずに
+                 * すぐ画面を復帰させる。
+                 */
+                cancelTimer();
 
             }
 
 
             return;
+
         }
 
     },
@@ -1492,9 +1959,6 @@ audioStart.classList.remove(
 );
 
 
-/*
- * 初期フォーカス
- */
 restoreKeyboardFocus();
 
 
@@ -1502,19 +1966,31 @@ console.log(
     "Timer initialized."
 );
 
+
 console.log(
     "Keyboard:",
+    "T = DEBUG 15sec",
     "J = previous",
     "L = next",
     "Space = start/pause/resume",
     "Backspace = cancel"
 );
 
+
 console.log(
     "Timer names:",
     "1m25s = T",
     "1m30s = W",
     "1m35s = S"
+);
+
+
+/*
+ * 起動時に保留ログ数を確認
+ */
+console.log(
+    "Pending logs:",
+    getPendingLogs().length
 );
 
 </script>
