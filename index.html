@@ -59,6 +59,11 @@ body {
     overflow: hidden;
 
     touch-action: manipulation;
+
+    /*
+     * キーボードフォーカスを受け取れるようにする
+     */
+    outline: none;
 }
 
 
@@ -317,7 +322,7 @@ button {
 </head>
 
 
-<body>
+<body tabindex="-1">
 
 
 <h1 id="title">
@@ -490,6 +495,123 @@ let timerInterval = null;
 
 
 /* =====================================================
+   キーボードフォーカス対策
+===================================================== */
+
+/*
+ * bodyをフォーカス可能にする
+ */
+function restoreKeyboardFocus() {
+
+    /*
+     * ボタンや入力欄を操作中の場合は
+     * 無理にフォーカスを奪わない
+     */
+    const activeElement =
+        document.activeElement;
+
+    if (
+        activeElement &&
+        (
+            activeElement.tagName === "INPUT" ||
+            activeElement.tagName === "TEXTAREA" ||
+            activeElement.tagName === "SELECT"
+        )
+    ) {
+        return;
+    }
+
+
+    try {
+
+        document.body.focus({
+            preventScroll: true
+        });
+
+    } catch (error) {
+
+        document.body.focus();
+
+    }
+
+}
+
+
+/*
+ * ページを開いた直後
+ */
+window.addEventListener(
+    "load",
+    () => {
+
+        restoreKeyboardFocus();
+
+    }
+);
+
+
+/*
+ * ブラウザやアプリに戻ってきたとき
+ */
+window.addEventListener(
+    "focus",
+    () => {
+
+        restoreKeyboardFocus();
+
+    }
+);
+
+
+/*
+ * Safari / iOS等でページが再表示されたとき
+ */
+document.addEventListener(
+    "visibilitychange",
+    () => {
+
+        if (!document.hidden) {
+
+            setTimeout(
+                () => {
+
+                    restoreKeyboardFocus();
+
+                },
+                50
+            );
+
+        }
+
+    }
+);
+
+
+/*
+ * 画面をタップ・クリックした後も
+ * キーボード入力を受け取れるようにする
+ */
+document.addEventListener(
+    "pointerdown",
+    () => {
+
+        setTimeout(
+            () => {
+
+                restoreKeyboardFocus();
+
+            },
+            0
+        );
+
+    },
+    {
+        passive: true
+    }
+);
+
+
+/* =====================================================
    時間表示
 ===================================================== */
 
@@ -514,6 +636,7 @@ function formatTime(seconds) {
         +
         String(secs).padStart(2, "0")
     );
+
 }
 
 
@@ -533,6 +656,7 @@ function updateSelection() {
 
         }
     );
+
 }
 
 
@@ -560,6 +684,7 @@ async function playBGM() {
         );
 
     }
+
 }
 
 
@@ -571,10 +696,15 @@ audioStart.addEventListener(
 
         await playBGM();
 
+        restoreKeyboardFocus();
+
     }
 );
 
 
+/*
+ * 画面操作時にBGMを開始
+ */
 document.addEventListener(
     "pointerdown",
     () => {
@@ -797,10 +927,6 @@ async function saveLog() {
         .from("timer_logs")
         .insert({
 
-            /*
-             * TIMER欄には従来どおり
-             * 1m25s / 1m30s / 1m35s
-             */
             label:
                 label,
 
@@ -830,6 +956,7 @@ async function saveLog() {
         );
 
         return false;
+
     }
 
 
@@ -954,6 +1081,20 @@ function returnToInitial() {
 
     updateSelection();
 
+
+    /*
+     * 初期画面に戻ったあとも
+     * キーボードフォーカスを復帰
+     */
+    setTimeout(
+        () => {
+
+            restoreKeyboardFocus();
+
+        },
+        50
+    );
+
 }
 
 
@@ -980,6 +1121,9 @@ cards.forEach(
 
 
                 playBGM();
+
+
+                restoreKeyboardFocus();
 
             }
         );
@@ -1026,12 +1170,28 @@ cards.forEach(
    キーボード操作
 ===================================================== */
 
-document.addEventListener(
+/*
+ * documentではなくwindowで受け取る
+ *
+ * これによりページ内の特定要素に
+ * フォーカスが移っていても
+ * キーイベントを拾いやすくする
+ */
+window.addEventListener(
     "keydown",
     async (event) => {
 
+        console.log(
+            "KEY:",
+            event.code,
+            "activeTimer:",
+            !!activeTimer
+        );
 
-        /* J */
+
+        /* =========================================
+           J
+        ========================================= */
 
         if (
             event.code === "KeyJ"
@@ -1054,11 +1214,15 @@ document.addEventListener(
 
             }
 
+            event.preventDefault();
+
             return;
         }
 
 
-        /* L */
+        /* =========================================
+           L
+        ========================================= */
 
         if (
             event.code === "KeyL"
@@ -1081,17 +1245,34 @@ document.addEventListener(
 
             }
 
+            event.preventDefault();
+
             return;
         }
 
 
-        /* Space */
+        /* =========================================
+           Space
+        ========================================= */
 
         if (
             event.code === "Space"
         ) {
 
+            /*
+             * Spaceの標準動作
+             * （ボタンのクリック等）を止める
+             */
             event.preventDefault();
+
+
+            /*
+             * キーリピートによる
+             * 多重処理を防止
+             */
+            if (event.repeat) {
+                return;
+            }
 
 
             if (!activeTimer) {
@@ -1110,11 +1291,14 @@ document.addEventListener(
 
             }
 
+
             return;
         }
 
 
-        /* Backspace */
+        /* =========================================
+           Backspace
+        ========================================= */
 
         if (
             event.code === "Backspace"
@@ -1123,16 +1307,27 @@ document.addEventListener(
             event.preventDefault();
 
 
+            /*
+             * キーリピートによる
+             * 多重キャンセルを防止
+             */
+            if (event.repeat) {
+                return;
+            }
+
+
             if (activeTimer) {
 
                 await cancelTimer();
 
             }
 
+
             return;
         }
 
-    }
+    },
+    true
 );
 
 
@@ -1148,8 +1343,22 @@ audioStart.classList.remove(
 );
 
 
+/*
+ * 初期フォーカス
+ */
+restoreKeyboardFocus();
+
+
 console.log(
     "Timer initialized."
+);
+
+console.log(
+    "Keyboard:",
+    "J = previous",
+    "L = next",
+    "Space = start/pause/resume",
+    "Backspace = cancel"
 );
 
 console.log(
