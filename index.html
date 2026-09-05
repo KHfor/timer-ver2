@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
+
 <meta charset="UTF-8">
+
 <meta name="viewport"
       content="width=device-width, initial-scale=1.0,
                maximum-scale=1.0, user-scalable=no">
@@ -12,17 +15,21 @@
 
 @font-face {
     font-family: "DSEG7 Classic";
+
     src:
         url("https://manzdev.github.io/twitch-casio/dseg7-bold.woff2")
         format("woff2"),
         url("https://manzdev.github.io/twitch-casio/dseg7-bold.woff")
         format("woff");
+
     font-display: swap;
 }
+
 
 * {
     box-sizing: border-box;
 }
+
 
 html,
 body {
@@ -31,7 +38,9 @@ body {
     margin: 0;
 }
 
+
 body {
+
     font-family:
         "Hiragino Kaku Gothic ProN",
         "Yu Gothic",
@@ -42,7 +51,9 @@ body {
     color: #39FF14;
 
     display: flex;
+
     flex-direction: column;
+
     align-items: center;
 
     overflow: hidden;
@@ -56,6 +67,7 @@ body {
 ========================= */
 
 h1 {
+
     font-size: 18px;
 
     color: #39FF14;
@@ -69,6 +81,7 @@ h1 {
 
 
 .hint {
+
     font-size: 11px;
 
     color: #3d5c35;
@@ -88,6 +101,7 @@ h1 {
 ========================= */
 
 .timers {
+
     display: flex;
 
     flex-wrap: wrap;
@@ -107,6 +121,7 @@ h1 {
 
 
 .card {
+
     text-align: center;
 
     padding: 8px;
@@ -125,6 +140,7 @@ h1 {
 
 
 .card h2 {
+
     font-size: 14px;
 
     color: #39FF14;
@@ -138,6 +154,7 @@ h1 {
 
 
 .card .display {
+
     font-family:
         "DSEG7 Classic",
         "DSEG",
@@ -158,6 +175,7 @@ h1 {
 ========================= */
 
 button {
+
     border: none;
 
     border-radius: 999px;
@@ -177,6 +195,7 @@ button {
 
 
 .start-btn {
+
     background: #39FF14;
 
     color: #0a0a0a;
@@ -289,24 +308,17 @@ button {
 }
 
 
-/* =========================
-   非表示
-========================= */
-
 .hidden {
     display: none !important;
 }
 
 </style>
+
 </head>
 
 
 <body>
 
-
-<!-- =========================
-     初期画面
-========================= -->
 
 <h1 id="title">
     TIMER
@@ -321,9 +333,11 @@ button {
 <div id="timers" class="timers">
 
 
-    <!-- 1分25秒 -->
+    <!-- T = 1分25秒 -->
 
-    <div class="card selected" data-seconds="85">
+    <div class="card selected"
+         data-seconds="85"
+         data-name="T">
 
         <h2>
             1m25s
@@ -340,9 +354,11 @@ button {
     </div>
 
 
-    <!-- 1分30秒 -->
+    <!-- W = 1分30秒 -->
 
-    <div class="card" data-seconds="90">
+    <div class="card"
+         data-seconds="90"
+         data-name="W">
 
         <h2>
             1m30s
@@ -359,9 +375,11 @@ button {
     </div>
 
 
-    <!-- 1分35秒 -->
+    <!-- S = 1分35秒 -->
 
-    <div class="card" data-seconds="95">
+    <div class="card"
+         data-seconds="95"
+         data-name="S">
 
         <h2>
             1m35s
@@ -380,24 +398,18 @@ button {
 </div>
 
 
-<!-- =========================
-     実行中画面
-========================= -->
-
 <div id="runningScreen"
      class="running-screen">
 
     <div id="runningNumber"
          class="running-number">
+
         01:25
+
     </div>
 
 </div>
 
-
-<!-- =========================
-     BGM
-========================= -->
 
 <audio id="bgm"
        src="./bgmpacman.mp3"
@@ -413,8 +425,6 @@ button {
 
 </button>
 
-
-<!-- Supabase -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -528,7 +538,6 @@ function updateSelection() {
 
 /* =====================================================
    BGM
-   タイマーとは完全に独立
 ===================================================== */
 
 async function playBGM() {
@@ -554,8 +563,6 @@ async function playBGM() {
 }
 
 
-/* BGMボタン */
-
 audioStart.addEventListener(
     "click",
     async (event) => {
@@ -567,15 +574,6 @@ audioStart.addEventListener(
     }
 );
 
-
-/*
- * 画面のどこをタップしても
- * BGM再生を試行
- *
- * iOS Safariではユーザー操作が
- * 必要になるため、最初のタップを
- * audio.play() に利用する
- */
 
 document.addEventListener(
     "pointerdown",
@@ -613,9 +611,17 @@ function startTimer(cardIndex) {
         );
 
 
+    const timerName =
+        cards[cardIndex]
+            .dataset
+            .name;
+
+
     activeTimer = {
 
         cardIndex: cardIndex,
+
+        name: timerName,
 
         remaining: seconds,
 
@@ -623,8 +629,6 @@ function startTimer(cardIndex) {
 
     };
 
-
-    /* 初期画面を隠す */
 
     title.classList.add(
         "hidden"
@@ -638,8 +642,6 @@ function startTimer(cardIndex) {
         "hidden"
     );
 
-
-    /* 実行画面 */
 
     runningScreen.classList.add(
         "show"
@@ -655,12 +657,8 @@ function startTimer(cardIndex) {
     );
 
 
-    /* BGM */
-
     playBGM();
 
-
-    /* タイマー開始 */
 
     timerInterval =
         setInterval(
@@ -763,6 +761,10 @@ async function saveLog() {
         .trim();
 
 
+    const timerName =
+        activeTimer.name;
+
+
     const remaining =
         Math.max(
             0,
@@ -781,6 +783,7 @@ async function saveLog() {
     console.log(
         "Saving timer log:",
         {
+            timerName,
             label,
             remaining,
             formatted
@@ -794,6 +797,10 @@ async function saveLog() {
         .from("timer_logs")
         .insert({
 
+            /*
+             * TIMER欄には従来どおり
+             * 1m25s / 1m30s / 1m35s
+             */
             label:
                 label,
 
@@ -827,7 +834,8 @@ async function saveLog() {
 
 
     console.log(
-        "Supabase INSERT SUCCESS"
+        "Supabase INSERT SUCCESS:",
+        timerName
     );
 
 
@@ -854,17 +862,8 @@ async function finishTimer() {
     timerInterval = null;
 
 
-    /*
-     * 00:00としてログ保存
-     */
-
     await saveLog();
 
-
-    /*
-     * 少しだけ00:00を表示してから
-     * 初期画面へ戻る
-     */
 
     setTimeout(
         () => {
@@ -895,10 +894,6 @@ async function cancelTimer() {
 
     timerInterval = null;
 
-
-    /*
-     * キャンセル時点の残り時間を保存
-     */
 
     await saveLog();
 
@@ -974,10 +969,6 @@ cards.forEach(
             "click",
             (event) => {
 
-                /*
-                 * タイマー実行中は無視
-                 */
-
                 if (activeTimer) {
                     return;
                 }
@@ -988,19 +979,11 @@ cards.forEach(
                 updateSelection();
 
 
-                /*
-                 * BGM解除
-                 */
-
                 playBGM();
 
             }
         );
 
-
-        /*
-         * STARTボタン
-         */
 
         const button =
             card.querySelector(
@@ -1024,10 +1007,6 @@ cards.forEach(
 
                 updateSelection();
 
-
-                /*
-                 * ユーザー操作中にBGM開始
-                 */
 
                 await playBGM();
 
@@ -1065,8 +1044,10 @@ document.addEventListener(
                 if (
                     selected < 0
                 ) {
+
                     selected =
                         cards.length - 1;
+
                 }
 
                 updateSelection();
@@ -1091,7 +1072,9 @@ document.addEventListener(
                     selected >=
                     cards.length
                 ) {
+
                     selected = 0;
+
                 }
 
                 updateSelection();
@@ -1111,10 +1094,6 @@ document.addEventListener(
             event.preventDefault();
 
 
-            /*
-             * タイマー未開始
-             */
-
             if (!activeTimer) {
 
                 await playBGM();
@@ -1124,10 +1103,6 @@ document.addEventListener(
                 );
 
             }
-
-            /*
-             * 実行中
-             */
 
             else {
 
@@ -1168,10 +1143,6 @@ document.addEventListener(
 updateSelection();
 
 
-/*
- * BGMボタンは最初に表示
- */
-
 audioStart.classList.remove(
     "hidden"
 );
@@ -1182,8 +1153,10 @@ console.log(
 );
 
 console.log(
-    "Supabase:",
-    SUPABASE_URL
+    "Timer names:",
+    "1m25s = T",
+    "1m30s = W",
+    "1m35s = S"
 );
 
 </script>
