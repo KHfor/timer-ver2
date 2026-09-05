@@ -900,6 +900,9 @@ async function saveLog() {
 
     const label =
         cards[
+            activeTimer.cardIndex === null
+        ? "DEBUG"
+        : cards[
             activeTimer.cardIndex
         ]
         .querySelector("h2")
@@ -1195,12 +1198,132 @@ window.addEventListener(
     "keydown",
     async (event) => {
 
-        console.log(
+                console.log(
             "KEY:",
             event.code,
             "activeTimer:",
             !!activeTimer
         );
+
+
+        /* =========================================
+           T
+           デバッグ用15秒タイマー
+        ========================================= */
+
+        if (
+            event.code === "KeyT"
+        ) {
+
+            /*
+             * すでにタイマー実行中なら何もしない
+             */
+            if (activeTimer) {
+                event.preventDefault();
+                return;
+            }
+
+
+            /*
+             * DEBUGタイマーを直接作成
+             */
+            activeTimer = {
+
+                cardIndex: null,
+
+                name: "DEBUG",
+
+                remaining: 15,
+
+                paused: false
+
+            };
+
+
+            /*
+             * 通常のタイマーと同じ
+             * 実行中画面へ移動
+             */
+
+            title.classList.add(
+                "hidden"
+            );
+
+            hint.classList.add(
+                "hidden"
+            );
+
+            timers.classList.add(
+                "hidden"
+            );
+
+            runningScreen.classList.add(
+                "show"
+            );
+
+
+            /*
+             * 15秒を表示
+             */
+
+            runningNumber.textContent =
+                formatTime(15);
+
+
+            /*
+             * 実行中なので通常の緑色
+             */
+
+            runningNumber.classList.remove(
+                "stopped-high",
+                "stopped-low"
+            );
+
+
+            /*
+             * BGM
+             */
+
+            await playBGM();
+
+
+            /*
+             * 通常タイマーと同じカウント処理
+             */
+
+            timerInterval =
+                setInterval(
+                    () => {
+
+                        if (!activeTimer) {
+                            return;
+                        }
+
+
+                        if (
+                            activeTimer.paused
+                        ) {
+                            return;
+                        }
+
+
+                        activeTimer.remaining--;
+
+
+                        runningNumber.textContent =
+                            formatTime(
+                                activeTimer.remaining
+                            );
+
+                    },
+                    1000
+                );
+
+
+            event.preventDefault();
+
+            return;
+        }
 
 
         /* =========================================
