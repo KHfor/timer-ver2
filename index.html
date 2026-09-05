@@ -273,12 +273,12 @@ button {
 }
 
 
-.running-number.paused {
-    color: #FF6633;
+.running-number.stopped-high {
+    color: #3666FF;
 }
 
-.running-number.over30 {
-    color: #3666FF;
+.running-number.stopped-low {
+    color: #FF6633;
 }
 
 
@@ -785,14 +785,11 @@ function startTimer(cardIndex) {
         formatTime(seconds);
 
 
+        // カウント中は常に通常色
     runningNumber.classList.remove(
-    "paused"
-);
-
-　　　runningNumber.classList.toggle(
-    "over30",
-    seconds >= 30
-);
+        "stopped-high",
+        "stopped-low"
+    );
 
 
     playBGM();
@@ -821,15 +818,6 @@ function startTimer(cardIndex) {
                         activeTimer.remaining
                     );
 
-                runningNumber.classList.toggle(
-                    "over30",
-                    activeTimer.remaining >= 30
-            );
-
-　　　　　　　　　　　runningNumber.classList.toggle(
-    　　　　　　　　　　　"over30",
-    　　　　　　　　　　　activeTimer.remaining >= 30
-　　　　　　　　　　　);
 
             },
             1000
@@ -853,18 +841,45 @@ function togglePause() {
         !activeTimer.paused;
 
 
-    if (
-        activeTimer.paused
-    ) {
+    if (activeTimer.paused) {
 
-        runningNumber.classList.add(
-            "paused"
-        );
+        /*
+         * 一時停止した瞬間の残り時間で色を決定
+         */
+
+        if (
+            activeTimer.remaining >= 30
+        ) {
+
+            runningNumber.classList.remove(
+                "stopped-low"
+            );
+
+            runningNumber.classList.add(
+                "stopped-high"
+            );
+
+        } else {
+
+            runningNumber.classList.remove(
+                "stopped-high"
+            );
+
+            runningNumber.classList.add(
+                "stopped-low"
+            );
+
+        }
 
     } else {
 
+        /*
+         * 再開したら通常色に戻す
+         */
+
         runningNumber.classList.remove(
-            "paused"
+            "stopped-high",
+            "stopped-low"
         );
 
     }
@@ -1050,7 +1065,8 @@ function returnToInitial() {
 
 
     runningNumber.classList.remove(
-        "paused"
+        "stopped-high",
+        "stopped-low"
     );
 
 
