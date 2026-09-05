@@ -826,6 +826,94 @@ function startTimer(cardIndex) {
 }
 
 
+      /* =====================================================
+   DEBUGタイマー
+   Tキー → 15秒
+===================================================== */
+
+function startDebugTimer() {
+
+    if (activeTimer) {
+        return;
+    }
+
+
+    activeTimer = {
+
+        cardIndex: null,
+
+        name: "DEBUG",
+
+        remaining: 15,
+
+        paused: false
+
+    };
+
+
+    title.classList.add(
+        "hidden"
+    );
+
+    hint.classList.add(
+        "hidden"
+    );
+
+    timers.classList.add(
+        "hidden"
+    );
+
+
+    runningScreen.classList.add(
+        "show"
+    );
+
+
+    runningNumber.textContent =
+        formatTime(15);
+
+
+    /*
+     * 実行中は通常の蛍光グリーン
+     */
+
+    runningNumber.classList.remove(
+        "stopped-high",
+        "stopped-low"
+    );
+
+
+    playBGM();
+
+
+    timerInterval =
+        setInterval(
+            () => {
+
+                if (!activeTimer) {
+                    return;
+                }
+
+
+                if (activeTimer.paused) {
+                    return;
+                }
+
+
+                activeTimer.remaining--;
+
+
+                runningNumber.textContent =
+                    formatTime(
+                        activeTimer.remaining
+                    );
+
+            },
+            1000
+        );
+
+}
+
 /* =====================================================
    一時停止 / 再開
 ===================================================== */
@@ -899,8 +987,7 @@ async function saveLog() {
 
 
     const label =
-        cards[
-            activeTimer.cardIndex === null
+    activeTimer.cardIndex === null
         ? "DEBUG"
         : cards[
             activeTimer.cardIndex
@@ -1206,126 +1293,51 @@ window.addEventListener(
         );
 
 
-        /* =========================================
-           T
-           デバッグ用15秒タイマー
-        ========================================= */
-
-        if (
-            event.code === "KeyT"
-        ) {
-
-            /*
-             * すでにタイマー実行中なら何もしない
-             */
-            if (activeTimer) {
-                event.preventDefault();
-                return;
-            }
+       console.log(
+    "KEY:",
+    event.code,
+    "activeTimer:",
+    !!activeTimer
+);
 
 
-            /*
-             * DEBUGタイマーを直接作成
-             */
-            activeTimer = {
+/* =========================================
+   T
+   DEBUG 15秒タイマー
+========================================= */
 
-                cardIndex: null,
+if (
+    event.code === "KeyT"
+) {
 
-                name: "DEBUG",
-
-                remaining: 15,
-
-                paused: false
-
-            };
+    event.preventDefault();
 
 
-            /*
-             * 通常のタイマーと同じ
-             * 実行中画面へ移動
-             */
+    /*
+     * キーリピートによる
+     * 多重起動を防止
+     */
 
-            title.classList.add(
-                "hidden"
-            );
-
-            hint.classList.add(
-                "hidden"
-            );
-
-            timers.classList.add(
-                "hidden"
-            );
-
-            runningScreen.classList.add(
-                "show"
-            );
+    if (event.repeat) {
+        return;
+    }
 
 
-            /*
-             * 15秒を表示
-             */
+    /*
+     * 実行中なら何もしない
+     */
 
-            runningNumber.textContent =
-                formatTime(15);
-
-
-            /*
-             * 実行中なので通常の緑色
-             */
-
-            runningNumber.classList.remove(
-                "stopped-high",
-                "stopped-low"
-            );
+    if (activeTimer) {
+        return;
+    }
 
 
-            /*
-             * BGM
-             */
+    startDebugTimer();
 
-            await playBGM();
+    return;
+}
 
-
-            /*
-             * 通常タイマーと同じカウント処理
-             */
-
-            timerInterval =
-                setInterval(
-                    () => {
-
-                        if (!activeTimer) {
-                            return;
-                        }
-
-
-                        if (
-                            activeTimer.paused
-                        ) {
-                            return;
-                        }
-
-
-                        activeTimer.remaining--;
-
-
-                        runningNumber.textContent =
-                            formatTime(
-                                activeTimer.remaining
-                            );
-
-                    },
-                    1000
-                );
-
-
-            event.preventDefault();
-
-            return;
-        }
-
-
+          
         /* =========================================
            J
         ========================================= */
