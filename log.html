@@ -243,9 +243,17 @@
 
     <h1>Timer Log</h1>
 
-    <button id="clearButton">
-        Clear Log
-    </button>
+    <div>
+
+        <button id="deleteOver1MinuteButton">
+            Delete 1min+
+        </button>
+
+        <button id="clearButton">
+            Clear Log
+        </button>
+
+    </div>
 
 </div>
 
@@ -877,6 +885,163 @@ async function loadLogs() {
     loadingLogs = false;
 
 }
+
+
+/* =====================================================
+   TIME LEFT が1分以上のログを削除
+===================================================== */
+
+function timeLeftToSeconds(value) {
+
+    if (!value) {
+        return 0;
+    }
+
+    const text = String(value).trim();
+
+    const parts = text.split(":");
+
+    if (parts.length !== 2) {
+        return 0;
+    }
+
+    const minutes = parseInt(parts[0], 10);
+    const seconds = parseInt(parts[1], 10);
+
+    if (
+        Number.isNaN(minutes) ||
+        Number.isNaN(seconds)
+    ) {
+        return 0;
+    }
+
+    return minutes * 60 + seconds;
+}
+
+
+document
+    .getElementById("deleteOver1MinuteButton")
+    .addEventListener(
+        "click",
+        async () => {
+
+            const result =
+                confirm(
+                    "TIME LEFT が1分以上のログを削除しますか？"
+                );
+
+            if (!result) {
+                return;
+            }
+
+
+            /* -----------------------------
+               まず全ログを取得
+            ----------------------------- */
+
+            const {
+                data,
+                error
+            } = await supabaseClient
+                .from("timer_logs")
+                .select(
+                    "id, remaining_formatted"
+                );
+
+
+            if (error) {
+
+                console.error(
+                    "ログ取得エラー:",
+                    error
+                );
+
+                alert(
+                    "ログの取得に失敗しました。"
+                );
+
+                return;
+            }
+
+
+            /* -----------------------------
+               1分以上のログだけ抽出
+            ----------------------------- */
+
+            const deleteIds =
+                data
+                    .filter(log => {
+
+                        return (
+                            timeLeftToSeconds(
+                                log.remaining_formatted
+                            ) >= 60
+                        );
+
+                    })
+                    .map(log => log.id);
+
+
+            /* -----------------------------
+               対象がない場合
+            ----------------------------- */
+
+            if (
+                deleteIds.length === 0
+            ) {
+
+                alert(
+                    "TIME LEFT が1分以上のログはありません。"
+                );
+
+                return;
+            }
+
+
+            /* -----------------------------
+               削除
+            ----------------------------- */
+
+            const {
+                error: deleteError
+            } = await supabaseClient
+                .from("timer_logs")
+                .delete()
+                .in(
+                    "id",
+                    deleteIds
+                );
+
+
+            if (deleteError) {
+
+                console.error(
+                    "ログ削除エラー:",
+                    deleteError
+                );
+
+                alert(
+                    "ログの削除に失敗しました。"
+                );
+
+                return;
+            }
+
+
+            /* -----------------------------
+               完了
+            ----------------------------- */
+
+            alert(
+                `${deleteIds.length}件のログを削除しました。`
+            );
+
+
+            await loadLogs();
+
+        }
+);    
+    
 
 
 /* =====================================================
