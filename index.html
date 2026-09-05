@@ -38,7 +38,6 @@ body {
         sans-serif;
 
     background: #000000;
-
     color: #39FF14;
 
     display: flex;
@@ -46,7 +45,6 @@ body {
     align-items: center;
 
     overflow: hidden;
-
     touch-action: manipulation;
 }
 
@@ -57,54 +55,43 @@ body {
 
 h1 {
     font-size: 18px;
-
     color: #39FF14;
 
     margin: 24px 0 4px;
 
     letter-spacing: 3px;
-
     font-weight: 500;
 }
 
-
 .hint {
     font-size: 11px;
-
     color: #3d5c35;
 
     margin-bottom: 20px;
 
     letter-spacing: 1px;
-
     text-align: center;
-
-    transition: opacity 0.2s;
 }
 
 
 /* =========================
-   タイマー選択エリア
+   タイマー
 ========================= */
 
 .timers {
     display: flex;
-
     flex-wrap: wrap;
 
     gap: 40px;
 
     justify-content: center;
-
     align-items: flex-start;
 
     width: 100%;
-
     max-width: 900px;
 
     padding: 0 16px;
 }
-
 
 .card {
     text-align: center;
@@ -118,11 +105,9 @@ h1 {
     transition: opacity 0.15s;
 }
 
-
 .card.selected {
     opacity: 1;
 }
-
 
 .card h2 {
     font-size: 14px;
@@ -135,7 +120,6 @@ h1 {
 
     letter-spacing: 1px;
 }
-
 
 .card .display {
     font-family:
@@ -154,7 +138,7 @@ h1 {
 
 
 /* =========================
-   STARTボタン
+   START
 ========================= */
 
 button {
@@ -175,18 +159,10 @@ button {
     -webkit-tap-highlight-color: transparent;
 }
 
-
 .start-btn {
     background: #39FF14;
-
     color: #0a0a0a;
 }
-
-
-.start-btn:hover {
-    opacity: 0.85;
-}
-
 
 .start-btn:active {
     transform: scale(0.96);
@@ -198,7 +174,6 @@ button {
 ========================= */
 
 .running-screen {
-
     position: fixed;
 
     top: 0;
@@ -214,14 +189,11 @@ button {
     z-index: 100;
 }
 
-
 .running-screen.show {
     display: block;
 }
 
-
 .running-number {
-
     position: absolute;
 
     top: 65%;
@@ -249,6 +221,15 @@ button {
 }
 
 
+/* 30秒以上 */
+
+.running-number.blue {
+    color: #4666FF;
+}
+
+
+/* 一時停止 */
+
 .running-number.paused {
     color: #FF6633;
 }
@@ -259,7 +240,6 @@ button {
 ========================= */
 
 .audio-start {
-
     position: fixed;
 
     bottom: 18px;
@@ -283,15 +263,9 @@ button {
     letter-spacing: 0.5px;
 }
 
-
 .audio-start.hidden {
     display: none;
 }
-
-
-/* =========================
-   非表示
-========================= */
 
 .hidden {
     display: none !important;
@@ -303,10 +277,6 @@ button {
 
 <body>
 
-
-<!-- =========================
-     初期画面
-========================= -->
 
 <h1 id="title">
     TIMER
@@ -321,13 +291,9 @@ button {
 <div id="timers" class="timers">
 
 
-    <!-- 1分25秒 -->
-
     <div class="card selected" data-seconds="85">
 
-        <h2>
-            1m25s
-        </h2>
+        <h2>1m25s</h2>
 
         <div class="display">
             01:25
@@ -340,13 +306,9 @@ button {
     </div>
 
 
-    <!-- 1分30秒 -->
-
     <div class="card" data-seconds="90">
 
-        <h2>
-            1m30s
-        </h2>
+        <h2>1m30s</h2>
 
         <div class="display">
             01:30
@@ -359,13 +321,9 @@ button {
     </div>
 
 
-    <!-- 1分35秒 -->
-
     <div class="card" data-seconds="95">
 
-        <h2>
-            1m35s
-        </h2>
+        <h2>1m35s</h2>
 
         <div class="display">
             01:35
@@ -380,10 +338,6 @@ button {
 </div>
 
 
-<!-- =========================
-     実行中画面
-========================= -->
-
 <div id="runningScreen"
      class="running-screen">
 
@@ -394,10 +348,6 @@ button {
 
 </div>
 
-
-<!-- =========================
-     BGM
-========================= -->
 
 <audio id="bgm"
        src="./bgmpacman.mp3"
@@ -414,8 +364,6 @@ button {
 </button>
 
 
-<!-- Supabase -->
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 
@@ -430,7 +378,6 @@ const SUPABASE_URL =
 
 const SUPABASE_KEY =
     "sb_publishable_anNXiP87LyAP-HUE-5tlGQ_ia6q2xEE";
-
 
 const db =
     supabase.createClient(
@@ -469,27 +416,24 @@ const bgm =
 
 
 /* =====================================================
-   Timer variables
+   Timer
 ===================================================== */
 
 let selected = 0;
-
 let activeTimer = null;
-
 let timerInterval = null;
 
 
 /* =====================================================
-   時間表示
+   時刻表示
 ===================================================== */
 
 function formatTime(seconds) {
 
-    seconds =
-        Math.max(
-            0,
-            Math.floor(seconds)
-        );
+    seconds = Math.max(
+        0,
+        Math.floor(seconds)
+    );
 
     const minutes =
         Math.floor(seconds / 60);
@@ -499,16 +443,14 @@ function formatTime(seconds) {
 
     return (
         String(minutes).padStart(2, "0")
-        +
-        ":"
-        +
+        + ":" +
         String(secs).padStart(2, "0")
     );
 }
 
 
 /* =====================================================
-   選択表示
+   選択
 ===================================================== */
 
 function updateSelection() {
@@ -528,7 +470,7 @@ function updateSelection() {
 
 /* =====================================================
    BGM
-   タイマーとは完全に独立
+   画面のどこをタップしても再生を試行
 ===================================================== */
 
 async function playBGM() {
@@ -546,7 +488,7 @@ async function playBGM() {
     } catch (error) {
 
         console.log(
-            "BGM autoplay blocked:",
+            "BGM playback blocked:",
             error
         );
 
@@ -554,27 +496,11 @@ async function playBGM() {
 }
 
 
-/* BGMボタン */
-
-audioStart.addEventListener(
-    "click",
-    async (event) => {
-
-        event.stopPropagation();
-
-        await playBGM();
-
-    }
-);
-
-
 /*
- * 画面のどこをタップしても
- * BGM再生を試行
+ * 画面全体のpointerdown
  *
- * iOS Safariではユーザー操作が
- * 必要になるため、最初のタップを
- * audio.play() に利用する
+ * START、タイマー実行中、空白部分など
+ * どこをタップしてもBGM再生を試行する。
  */
 
 document.addEventListener(
@@ -582,14 +508,26 @@ document.addEventListener(
     () => {
 
         if (bgm.paused) {
-
             playBGM();
-
         }
 
     },
     {
         passive: true
+    }
+);
+
+
+/* BGMボタン */
+
+audioStart.addEventListener(
+    "click",
+    (event) => {
+
+        event.stopPropagation();
+
+        playBGM();
+
     }
 );
 
@@ -624,43 +562,23 @@ function startTimer(cardIndex) {
     };
 
 
-    /* 初期画面を隠す */
-
-    title.classList.add(
-        "hidden"
-    );
-
-    hint.classList.add(
-        "hidden"
-    );
-
-    timers.classList.add(
-        "hidden"
-    );
+    title.classList.add("hidden");
+    hint.classList.add("hidden");
+    timers.classList.add("hidden");
 
 
-    /* 実行画面 */
-
-    runningScreen.classList.add(
-        "show"
-    );
+    runningScreen.classList.add("show");
 
 
     runningNumber.textContent =
         formatTime(seconds);
 
 
-    runningNumber.classList.remove(
-        "paused"
-    );
+    updateRunningColor();
 
-
-    /* BGM */
 
     playBGM();
 
-
-    /* タイマー開始 */
 
     timerInterval =
         setInterval(
@@ -670,10 +588,7 @@ function startTimer(cardIndex) {
                     return;
                 }
 
-
-                if (
-                    activeTimer.paused
-                ) {
+                if (activeTimer.paused) {
                     return;
                 }
 
@@ -690,10 +605,11 @@ function startTimer(cardIndex) {
                     runningNumber.textContent =
                         "00:00";
 
+                    updateRunningColor();
+
                     finishTimer();
 
                     return;
-
                 }
 
 
@@ -702,9 +618,64 @@ function startTimer(cardIndex) {
                         activeTimer.remaining
                     );
 
+
+                updateRunningColor();
+
             },
             1000
         );
+
+}
+
+
+/* =====================================================
+   色変更
+===================================================== */
+
+function updateRunningColor() {
+
+    if (!activeTimer) {
+        return;
+    }
+
+
+    runningNumber.classList.remove(
+        "blue"
+    );
+
+
+    runningNumber.classList.remove(
+        "paused"
+    );
+
+
+    /*
+     * 一時停止中はオレンジを優先
+     */
+
+    if (activeTimer.paused) {
+
+        runningNumber.classList.add(
+            "paused"
+        );
+
+        return;
+    }
+
+
+    /*
+     * 残り30秒以上は蛍光青
+     */
+
+    if (
+        activeTimer.remaining >= 30
+    ) {
+
+        runningNumber.classList.add(
+            "blue"
+        );
+
+    }
 
 }
 
@@ -724,27 +695,13 @@ function togglePause() {
         !activeTimer.paused;
 
 
-    if (
-        activeTimer.paused
-    ) {
-
-        runningNumber.classList.add(
-            "paused"
-        );
-
-    } else {
-
-        runningNumber.classList.remove(
-            "paused"
-        );
-
-    }
+    updateRunningColor();
 
 }
 
 
 /* =====================================================
-   Supabaseへログ保存
+   Supabaseログ保存
 ===================================================== */
 
 async function saveLog() {
@@ -772,20 +729,22 @@ async function saveLog() {
         );
 
 
-    const formatted =
-        formatTime(
-            remaining
+    /*
+     * 残り60秒以上ならログに保存しない
+     */
+
+    if (remaining >= 60) {
+
+        console.log(
+            "Remaining time is 60 seconds or more. Log will not be saved."
         );
 
+        return true;
+    }
 
-    console.log(
-        "Saving timer log:",
-        {
-            label,
-            remaining,
-            formatted
-        }
-    );
+
+    const formatted =
+        formatTime(remaining);
 
 
     const {
@@ -818,8 +777,7 @@ async function saveLog() {
 
         alert(
             "ログの保存に失敗しました。\n\n"
-            +
-            error.message
+            + error.message
         );
 
         return false;
@@ -832,7 +790,6 @@ async function saveLog() {
 
 
     return true;
-
 }
 
 
@@ -854,17 +811,8 @@ async function finishTimer() {
     timerInterval = null;
 
 
-    /*
-     * 00:00としてログ保存
-     */
-
     await saveLog();
 
-
-    /*
-     * 少しだけ00:00を表示してから
-     * 初期画面へ戻る
-     */
 
     setTimeout(
         () => {
@@ -896,10 +844,6 @@ async function cancelTimer() {
     timerInterval = null;
 
 
-    /*
-     * キャンセル時点の残り時間を保存
-     */
-
     await saveLog();
 
 
@@ -909,7 +853,7 @@ async function cancelTimer() {
 
 
 /* =====================================================
-   初期画面へ戻る
+   初期画面
 ===================================================== */
 
 function returnToInitial() {
@@ -920,7 +864,6 @@ function returnToInitial() {
 
     timerInterval = null;
 
-
     activeTimer = null;
 
 
@@ -928,20 +871,13 @@ function returnToInitial() {
         "show"
     );
 
+    runningNumber.classList.remove(
+        "blue"
+    );
 
     runningNumber.classList.remove(
         "paused"
     );
-
-
-    runningNumber.textContent =
-        formatTime(
-            Number(
-                cards[selected]
-                    .dataset
-                    .seconds
-            )
-        );
 
 
     title.classList.remove(
@@ -963,7 +899,7 @@ function returnToInitial() {
 
 
 /* =====================================================
-   カードクリック
+   カード
 ===================================================== */
 
 cards.forEach(
@@ -972,11 +908,7 @@ cards.forEach(
 
         card.addEventListener(
             "click",
-            (event) => {
-
-                /*
-                 * タイマー実行中は無視
-                 */
+            () => {
 
                 if (activeTimer) {
                     return;
@@ -987,20 +919,11 @@ cards.forEach(
 
                 updateSelection();
 
-
-                /*
-                 * BGM解除
-                 */
-
                 playBGM();
 
             }
         );
 
-
-        /*
-         * STARTボタン
-         */
 
         const button =
             card.querySelector(
@@ -1025,16 +948,10 @@ cards.forEach(
                 updateSelection();
 
 
-                /*
-                 * ユーザー操作中にBGM開始
-                 */
-
                 await playBGM();
 
 
-                startTimer(
-                    index
-                );
+                startTimer(index);
 
             }
         );
@@ -1044,7 +961,7 @@ cards.forEach(
 
 
 /* =====================================================
-   キーボード操作
+   キーボード
 ===================================================== */
 
 document.addEventListener(
@@ -1111,25 +1028,13 @@ document.addEventListener(
             event.preventDefault();
 
 
-            /*
-             * タイマー未開始
-             */
-
             if (!activeTimer) {
 
                 await playBGM();
 
-                startTimer(
-                    selected
-                );
+                startTimer(selected);
 
-            }
-
-            /*
-             * 実行中
-             */
-
-            else {
+            } else {
 
                 togglePause();
 
@@ -1167,23 +1072,8 @@ document.addEventListener(
 
 updateSelection();
 
-
-/*
- * BGMボタンは最初に表示
- */
-
 audioStart.classList.remove(
     "hidden"
-);
-
-
-console.log(
-    "Timer initialized."
-);
-
-console.log(
-    "Supabase:",
-    SUPABASE_URL
 );
 
 </script>
