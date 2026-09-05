@@ -262,415 +262,492 @@
 
     <script>
 
-        const SUPABASE_URL =
-            "https://hkogobchcvryyzuelfx.supabase.co";
+    const SUPABASE_URL =
+        "https://hkogobchcvryyzuelfx.supabase.co";
 
-        const SUPABASE_KEY =
-            "sb_publishable_anNXiP87LyAP-HUE-5tlGQ_ia6q2xEE";
+    const SUPABASE_KEY =
+        "sb_publishable_anNXiP87LyAP-HUE-5tlGQ_ia6q2xEE";
 
-        const supabaseClient =
-            window.supabase.createClient(
-                SUPABASE_URL,
-                SUPABASE_KEY
+    const supabaseClient =
+        window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_KEY
+        );
+
+
+    // --------------------------------
+    // HTMLエスケープ
+    // --------------------------------
+
+    function escapeHtml(value) {
+
+        return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+
+    }
+
+
+    // --------------------------------
+    // タイマー名を判定
+    //
+    // 1m25s = T
+    // 1m30s = W
+    // 1m35s = S
+    // --------------------------------
+
+    function getTimerName(label) {
+
+        if (label === "1m25s") {
+            return "T";
+        }
+
+        if (label === "1m30s") {
+            return "W";
+        }
+
+        if (label === "1m35s") {
+            return "S";
+        }
+
+        return "";
+
+    }
+
+
+    // --------------------------------
+    // COUNT VALUE
+    //
+    // S = 1
+    // W = 2
+    // T = 3
+    // --------------------------------
+
+    function getCountValue(timerName) {
+
+        if (timerName === "S") {
+            return 1;
+        }
+
+        if (timerName === "W") {
+            return 2;
+        }
+
+        if (timerName === "T") {
+            return 3;
+        }
+
+        return 0;
+
+    }
+
+
+    // --------------------------------
+    // COUNT SUMMARY
+    // --------------------------------
+
+    function updateCountSummary(logs) {
+
+        const hourly = {};
+        const daily = {};
+
+
+        logs.forEach(log => {
+
+            const timerName =
+                getTimerName(log.label);
+
+            const value =
+                getCountValue(timerName);
+
+
+            // S / W / T 以外は無視
+            if (value === 0) {
+                return;
+            }
+
+
+            const date =
+                new Date(log.stopped_at);
+
+
+            if (
+                Number.isNaN(
+                    date.getTime()
+                )
+            ) {
+                return;
+            }
+
+
+            // --------------------------------
+            // 日付
+            // --------------------------------
+
+            const year =
+                date.getFullYear();
+
+            const month =
+                String(
+                    date.getMonth() + 1
+                ).padStart(2, "0");
+
+            const day =
+                String(
+                    date.getDate()
+                ).padStart(2, "0");
+
+            const hour =
+                String(
+                    date.getHours()
+                ).padStart(2, "0");
+
+
+            // --------------------------------
+            // 日単位
+            // --------------------------------
+
+            const dayKey =
+                `${year}/${month}/${day}`;
+
+
+            // --------------------------------
+            // 時間単位
+            // --------------------------------
+
+            const hourKey =
+                `${year}/${month}/${day} ${hour}:00`;
+
+
+            // --------------------------------
+            // 加算
+            // --------------------------------
+
+            daily[dayKey] =
+                (daily[dayKey] || 0)
+                + value;
+
+            hourly[hourKey] =
+                (hourly[hourKey] || 0)
+                + value;
+
+        });
+
+
+        // =================================
+        // 1日あたり
+        // =================================
+
+        const dailyContainer =
+            document.getElementById(
+                "dailyCounts"
+            );
+
+
+        const dailyKeys =
+            Object.keys(daily)
+                .filter(key => {
+                    return daily[key] > 0;
+                })
+                .sort()
+                .reverse();
+
+
+        if (dailyKeys.length === 0) {
+
+            dailyContainer.innerHTML =
+                `<div>データなし</div>`;
+
+        } else {
+
+            dailyContainer.innerHTML =
+                dailyKeys
+                    .map(key => {
+
+                        return `
+                            <div class="count-row">
+
+                                <span>
+                                    ${escapeHtml(key)}
+                                </span>
+
+                                <span class="count-value">
+                                    ${daily[key]}
+                                </span>
+
+                            </div>
+                        `;
+
+                    })
+                    .join("");
+
+        }
+
+
+        // =================================
+        // 1時間あたり
+        // =================================
+
+        const hourlyContainer =
+            document.getElementById(
+                "hourlyCounts"
+            );
+
+
+        const hourlyKeys =
+            Object.keys(hourly)
+                .filter(key => {
+                    return hourly[key] > 0;
+                })
+                .sort()
+                .reverse();
+
+
+        if (hourlyKeys.length === 0) {
+
+            hourlyContainer.innerHTML =
+                `<div>データなし</div>`;
+
+        } else {
+
+            hourlyContainer.innerHTML =
+                hourlyKeys
+                    .map(key => {
+
+                        return `
+                            <div class="count-row">
+
+                                <span>
+                                    ${escapeHtml(key)}
+                                </span>
+
+                                <span class="count-value">
+                                    ${hourly[key]}
+                                </span>
+
+                            </div>
+                        `;
+
+                    })
+                    .join("");
+
+        }
+
+    }
+
+
+    // --------------------------------
+    // 日時表示
+    // --------------------------------
+
+    function formatDate(dateString) {
+
+        if (!dateString) {
+            return "";
+        }
+
+
+        const date =
+            new Date(dateString);
+
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+            return dateString;
+        }
+
+
+        return date.toLocaleString(
+            "ja-JP",
+            {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit"
+            }
+        );
+
+    }
+
+
+    // --------------------------------
+    // ログ読み込み
+    // --------------------------------
+
+    async function loadLogs() {
+
+        const { data, error } =
+            await supabaseClient
+                .from("timer_logs")
+                .select("*")
+                .order(
+                    "stopped_at",
+                    {
+                        ascending: true
+                    }
+                );
+
+
+        console.log(
+            "Supabase data:",
+            data
+        );
+
+        console.log(
+            "Supabase error:",
+            error
+        );
+
+
+        // --------------------------------
+        // エラー
+        // --------------------------------
+
+        if (error) {
+
+            console.error(
+                "ログ取得エラー:",
+                error
+            );
+
+            alert(
+                "ログ取得エラー:\n" +
+                error.message
+            );
+
+            return;
+
+        }
+
+
+        // --------------------------------
+        // データなし
+        // --------------------------------
+
+        if (!data) {
+
+            console.log(
+                "ログデータがありません"
+            );
+
+            return;
+
+        }
+
+
+        console.log(
+            "取得したログ件数:",
+            data.length
+        );
+
+
+        // --------------------------------
+        // S / W / T の番号を
+        // 独立してカウント
+        // --------------------------------
+
+        let sCount = 0;
+        let wCount = 0;
+        let tCount = 0;
+
+
+        const logs = data.map(log => {
+
+            const timerName =
+                getTimerName(log.label);
+
+            let swtNo = "";
+
+
+            if (timerName === "S") {
+
+                sCount++;
+
+                swtNo =
+                    `S${sCount}`;
+
+            } else if (
+                timerName === "W"
+            ) {
+
+                wCount++;
+
+                swtNo =
+                    `W${wCount}`;
+
+            } else if (
+                timerName === "T"
+            ) {
+
+                tCount++;
+
+                swtNo =
+                    `T${tCount}`;
+
+            }
+
+
+            return {
+                ...log,
+                swtNo
+            };
+
+        });
+
+
+        // --------------------------------
+        // 表示は新しいログを上にする
+        // --------------------------------
+
+        logs.reverse();
+
+
+        const logBody =
+            document.getElementById(
+                "logBody"
             );
 
 
         // --------------------------------
-        // HTMLエスケープ
+        // ログが0件の場合
         // --------------------------------
 
-        function escapeHtml(value) {
+        if (logs.length === 0) {
 
-            return String(value ?? "")
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+            logBody.innerHTML = `
+                <tr>
+                    <td
+                        colspan="4"
+                        class="empty"
+                    >
+                        ログはありません
+                    </td>
+                </tr>
+            `;
+
+
+            updateCountSummary([]);
+
+            return;
 
         }
 
 
         // --------------------------------
-        // タイマー名を判定
-        //
-        // 1m25s = T
-        // 1m30s = W
-        // 1m35s = S
+        // テーブル生成
         // --------------------------------
 
-        function getTimerName(label) {
-
-            if (label === "1m25s") {
-                return "T";
-            }
-
-            if (label === "1m30s") {
-                return "W";
-            }
-
-            if (label === "1m35s") {
-                return "S";
-            }
-
-            return "";
-
-        }
-
-
-        // --------------------------------
-        // COUNT VALUE
-        //
-        // S = 1
-        // W = 2
-        // T = 3
-        // --------------------------------
-
-        function getCountValue(timerName) {
-
-            if (timerName === "S") {
-                return 1;
-            }
-
-            if (timerName === "W") {
-                return 2;
-            }
-
-            if (timerName === "T") {
-                return 3;
-            }
-
-            return 0;
-
-        }
-
-
-        // --------------------------------
-        // COUNT SUMMARY
-        // --------------------------------
-
-        function updateCountSummary(logs) {
-
-            const hourly = {};
-            const daily = {};
-
-
-            // =================================
-            // ログを集計
-            // =================================
-
-            logs.forEach(log => {
-
-                const timerName =
-                    getTimerName(log.label);
-
-                const value =
-                    getCountValue(timerName);
-
-
-                // S / W / T 以外は無視
-                if (value === 0) {
-                    return;
-                }
-
-
-                const date =
-                    new Date(log.stopped_at);
-
-
-                if (
-                    Number.isNaN(
-                        date.getTime()
-                    )
-                ) {
-                    return;
-                }
-
-
-                // --------------------------------
-                // 日付
-                // --------------------------------
-
-                const year =
-                    date.getFullYear();
-
-                const month =
-                    String(
-                        date.getMonth() + 1
-                    ).padStart(2, "0");
-
-                const day =
-                    String(
-                        date.getDate()
-                    ).padStart(2, "0");
-
-                const hour =
-                    String(
-                        date.getHours()
-                    ).padStart(2, "0");
-
-
-                // --------------------------------
-                // 日単位
-                // --------------------------------
-
-                const dayKey =
-                    `${year}/${month}/${day}`;
-
-
-                // --------------------------------
-                // 時間単位
-                // --------------------------------
-
-                const hourKey =
-                    `${year}/${month}/${day} ${hour}:00`;
-
-
-                // --------------------------------
-                // 加算
-                // --------------------------------
-
-                daily[dayKey] =
-                    (daily[dayKey] || 0)
-                    + value;
-
-                hourly[hourKey] =
-                    (hourly[hourKey] || 0)
-                    + value;
-
-            });
-
-
-            // =================================
-            // 1日あたり
-            // =================================
-
-            const dailyContainer =
-                document.getElementById(
-                    "dailyCounts"
-                );
-
-
-            const dailyKeys =
-                Object.keys(daily)
-                    .filter(key => {
-                        return daily[key] > 0;
-                    })
-                    .sort()
-                    .reverse();
-
-
-            if (dailyKeys.length === 0) {
-
-                dailyContainer.innerHTML =
-                    `<div>データなし</div>`;
-
-            } else {
-
-                dailyContainer.innerHTML =
-                    dailyKeys
-                        .map(key => {
-
-                            return `
-                                <div class="count-row">
-
-                                    <span>
-                                        ${escapeHtml(key)}
-                                    </span>
-
-                                    <span class="count-value">
-                                        ${daily[key]}
-                                    </span>
-
-                                </div>
-                            `;
-
-                        })
-                        .join("");
-
-            }
-
-
-            // =================================
-            // 1時間あたり
-            // =================================
-
-            const hourlyContainer =
-                document.getElementById(
-                    "hourlyCounts"
-                );
-
-
-            const hourlyKeys =
-                Object.keys(hourly)
-                    .filter(key => {
-
-                        // 0件の時間帯は表示しない
-                        return hourly[key] > 0;
-
-                    })
-                    .sort()
-                    .reverse();
-
-
-            if (hourlyKeys.length === 0) {
-
-                hourlyContainer.innerHTML =
-                    `<div>データなし</div>`;
-
-            } else {
-
-                hourlyContainer.innerHTML =
-                    hourlyKeys
-                        .map(key => {
-
-                            return `
-                                <div class="count-row">
-
-                                    <span>
-                                        ${escapeHtml(key)}
-                                    </span>
-
-                                    <span class="count-value">
-                                        ${hourly[key]}
-                                    </span>
-
-                                </div>
-                            `;
-
-                        })
-                        .join("");
-
-            }
-
-        }
-
-
-        // --------------------------------
-        // ログ読み込み
-        // --------------------------------
-
-        async function loadLogs() {
-
-            const { data, error } =
-                await supabaseClient
-                    .from("timer_logs")
-                    .select("*")
-                    .order("stopped_at", {
-                        ascending: true
-                    });
-
-
-            if (error) {
-
-                console.error(
-                    "ログ取得エラー:",
-                    error
-                );
-
-                return;
-
-            }
-
-
-            // --------------------------------
-            // S / W / T の番号を独立してカウント
-            // --------------------------------
-
-            let sCount = 0;
-            let wCount = 0;
-            let tCount = 0;
-
-
-            const logs = data.map(log => {
-
-                const timerName =
-                    getTimerName(log.label);
-
-                let swtNo = "";
-
-
-                if (timerName === "S") {
-
-                    sCount++;
-
-                    swtNo =
-                        `S${sCount}`;
-
-                } else if (
-                    timerName === "W"
-                ) {
-
-                    wCount++;
-
-                    swtNo =
-                        `W${wCount}`;
-
-                } else if (
-                    timerName === "T"
-                ) {
-
-                    tCount++;
-
-                    swtNo =
-                        `T${tCount}`;
-
-                }
-
-
-                return {
-                    ...log,
-                    swtNo
-                };
-
-            });
-
-
-            // --------------------------------
-            // 表示は新しいログを上にする
-            // --------------------------------
-
-            logs.reverse();
-
-
-            const logBody =
-                document.getElementById(
-                    "logBody"
-                );
-
-
-            // --------------------------------
-            // ログが0件の場合
-            // --------------------------------
-
-            if (logs.length === 0) {
-
-                logBody.innerHTML = `
-                    <tr>
-                        <td
-                            colspan="4"
-                            class="empty"
-                        >
-                            ログはありません
-                        </td>
-                    </tr>
-                `;
-
-
-                // 集計もクリア
-                updateCountSummary(logs);
-
-                return;
-
-            }
-
-
-            // --------------------------------
-            // テーブル生成
-            // --------------------------------
-
-            logBody.innerHTML =
-                logs.map(log => {
+        logBody.innerHTML =
+            logs
+                .map(log => {
 
                     return `
                         <tr>
@@ -685,7 +762,9 @@
 
                             <td>
                                 ${escapeHtml(
-                                    log.label
+                                    getTimerName(
+                                        log.label
+                                    )
                                 )}
                             </td>
 
@@ -704,145 +783,107 @@
                         </tr>
                     `;
 
-                }).join("");
-
-
-            // --------------------------------
-            // COUNT SUMMARY 更新
-            // --------------------------------
-
-            updateCountSummary(logs);
-
-        }
+                })
+                .join("");
 
 
         // --------------------------------
-        // 日時表示
+        // COUNT SUMMARY 更新
         // --------------------------------
 
-        function formatDate(dateString) {
+        updateCountSummary(logs);
 
-            if (!dateString) {
-                return "";
+    }
+
+
+    // --------------------------------
+    // ログ全削除
+    // --------------------------------
+
+    document
+        .getElementById("clearButton")
+        .addEventListener(
+            "click",
+            async () => {
+
+                const result =
+                    confirm(
+                        "すべてのログを削除しますか？"
+                    );
+
+
+                if (!result) {
+                    return;
+                }
+
+
+                const { error } =
+                    await supabaseClient
+                        .from("timer_logs")
+                        .delete()
+                        .not(
+                            "id",
+                            "is",
+                            null
+                        );
+
+
+                if (error) {
+
+                    console.error(
+                        "ログ削除エラー:",
+                        error
+                    );
+
+
+                    alert(
+                        "ログの削除に失敗しました。"
+                    );
+
+                    return;
+
+                }
+
+
+                await loadLogs();
+
             }
+        );
 
 
-            const date =
-                new Date(dateString);
+    // --------------------------------
+    // Supabase Realtime
+    // --------------------------------
 
+    supabaseClient
+        .channel(
+            "timer_logs_changes"
+        )
 
-            if (
-                Number.isNaN(
-                    date.getTime()
-                )
-            ) {
-                return dateString;
+        .on(
+            "postgres_changes",
+            {
+                event: "*",
+                schema: "public",
+                table: "timer_logs"
+            },
+            () => {
+
+                loadLogs();
+
             }
+        )
+
+        .subscribe();
 
 
-            return date.toLocaleString(
-                "ja-JP",
-                {
-                    year: "numeric",
-                    month: "2-digit",
-                    day: "2-digit",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit"
-                }
-            );
+    // --------------------------------
+    // 初回読み込み
+    // --------------------------------
 
-        }
+    loadLogs();
 
-
-        // --------------------------------
-        // ログ全削除
-        // --------------------------------
-
-        document
-            .getElementById("clearButton")
-            .addEventListener(
-                "click",
-                async () => {
-
-                    const result =
-                        confirm(
-                            "すべてのログを削除しますか？"
-                        );
-
-
-                    if (!result) {
-                        return;
-                    }
-
-
-                    const { error } =
-                        await supabaseClient
-                            .from("timer_logs")
-                            .delete()
-                            .not(
-                                "id",
-                                "is",
-                                null
-                            );
-
-
-                    if (error) {
-
-                        console.error(
-                            "ログ削除エラー:",
-                            error
-                        );
-
-
-                        alert(
-                            "ログの削除に失敗しました。"
-                        );
-
-                        return;
-
-                    }
-
-
-                    await loadLogs();
-
-                }
-            );
-
-
-        // --------------------------------
-        // Supabase Realtime
-        // --------------------------------
-
-        supabaseClient
-            .channel(
-                "timer_logs_changes"
-            )
-
-            .on(
-                "postgres_changes",
-                {
-                    event: "*",
-                    schema: "public",
-                    table: "timer_logs"
-                },
-                () => {
-
-                    loadLogs();
-
-                }
-            )
-
-            .subscribe();
-
-
-        // --------------------------------
-        // 初回読み込み
-        // --------------------------------
-
-        loadLogs();
-
-    </script>
+</script>
 
 </body>
 </html>
