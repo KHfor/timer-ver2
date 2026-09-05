@@ -2,17 +2,21 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0,
+               maximum-scale=1.0, user-scalable=no">
 
 <title>Timer</title>
 
 <style>
+
 @font-face {
     font-family: "DSEG7 Classic";
-    src: url("https://manzdev.github.io/twitch-casio/dseg7-bold.woff2")
-         format("woff2"),
-         url("https://manzdev.github.io/twitch-casio/dseg7-bold.woff")
-         format("woff");
+    src:
+        url("https://manzdev.github.io/twitch-casio/dseg7-bold.woff2")
+        format("woff2"),
+        url("https://manzdev.github.io/twitch-casio/dseg7-bold.woff")
+        format("woff");
     font-display: swap;
 }
 
@@ -22,6 +26,7 @@
 
 html,
 body {
+    width: 100%;
     height: 100%;
     margin: 0;
 }
@@ -34,64 +39,72 @@ body {
 
     background: #000000;
 
+    color: #39FF14;
+
     display: flex;
     flex-direction: column;
     align-items: center;
 
     overflow: hidden;
+
+    touch-action: manipulation;
 }
 
-/* タイトル */
+
+/* =========================
+   初期画面
+========================= */
 
 h1 {
     font-size: 18px;
+
     color: #39FF14;
 
     margin: 24px 0 4px;
 
     letter-spacing: 3px;
+
     font-weight: 500;
 }
 
-/* 操作説明 */
 
 .hint {
     font-size: 11px;
+
     color: #3d5c35;
 
     margin-bottom: 20px;
 
     letter-spacing: 1px;
+
     text-align: center;
 
     transition: opacity 0.2s;
 }
 
-/* 非表示 */
 
-h1.hidden,
-.hint.hidden,
-.timers.hidden {
-    display: none;
-}
-
-/* タイマー3つ */
+/* =========================
+   タイマー選択エリア
+========================= */
 
 .timers {
     display: flex;
+
     flex-wrap: wrap;
 
     gap: 40px;
 
     justify-content: center;
 
+    align-items: flex-start;
+
     width: 100%;
+
     max-width: 900px;
 
     padding: 0 16px;
 }
 
-/* 各タイマーカード */
 
 .card {
     text-align: center;
@@ -105,13 +118,11 @@ h1.hidden,
     transition: opacity 0.15s;
 }
 
-/* 選択中 */
 
 .card.selected {
     opacity: 1;
 }
 
-/* 1m25sなど */
 
 .card h2 {
     font-size: 14px;
@@ -125,7 +136,6 @@ h1.hidden,
     letter-spacing: 1px;
 }
 
-/* 01:25など */
 
 .card .display {
     font-family:
@@ -142,7 +152,10 @@ h1.hidden,
     letter-spacing: 2px;
 }
 
-/* ボタン共通 */
+
+/* =========================
+   STARTボタン
+========================= */
 
 button {
     border: none;
@@ -158,22 +171,34 @@ button {
     cursor: pointer;
 
     font-family: inherit;
+
+    -webkit-tap-highlight-color: transparent;
 }
 
-/* START */
 
 .start-btn {
     background: #39FF14;
+
     color: #0a0a0a;
 }
+
 
 .start-btn:hover {
     opacity: 0.85;
 }
 
-/* 実行中の全画面 */
+
+.start-btn:active {
+    transform: scale(0.96);
+}
+
+
+/* =========================
+   実行中画面
+========================= */
 
 .running-screen {
+
     position: fixed;
 
     top: 0;
@@ -185,15 +210,18 @@ button {
     display: none;
 
     pointer-events: none;
+
+    z-index: 100;
 }
+
 
 .running-screen.show {
     display: block;
 }
 
-/* 実行中の数字 */
 
 .running-number {
+
     position: absolute;
 
     top: 65%;
@@ -216,17 +244,22 @@ button {
     letter-spacing: 4px;
 
     white-space: nowrap;
+
+    text-align: center;
 }
 
-/* 一時停止中 */
 
 .running-number.paused {
     color: #FF6633;
 }
 
-/* BGMボタン */
+
+/* =========================
+   BGMボタン
+========================= */
 
 .audio-start {
+
     position: fixed;
 
     bottom: 18px;
@@ -235,7 +268,7 @@ button {
     transform:
         translateX(-50%);
 
-    z-index: 10;
+    z-index: 200;
 
     background: transparent;
 
@@ -250,37 +283,147 @@ button {
     letter-spacing: 0.5px;
 }
 
-/* BGMボタン非表示 */
 
 .audio-start.hidden {
     display: none;
 }
+
+
+/* =========================
+   非表示
+========================= */
+
+.hidden {
+    display: none !important;
+}
+
 </style>
 </head>
 
+
 <body>
 
-<div class="cards">
+
+<!-- =========================
+     初期画面
+========================= -->
+
+<h1 id="title">
+    TIMER
+</h1>
+
+
+<div id="hint" class="hint">
+    Click to Select / Space to Start, pause or resume / Backspace to Cancel
+</div>
+
+
+<div id="timers" class="timers">
+
+
+    <!-- 1分25秒 -->
 
     <div class="card selected" data-seconds="85">
-        <h2>1:25</h2>
+
+        <h2>
+            1m25s
+        </h2>
+
+        <div class="display">
+            01:25
+        </div>
+
+        <button class="start-btn">
+            START
+        </button>
+
     </div>
+
+
+    <!-- 1分30秒 -->
 
     <div class="card" data-seconds="90">
-        <h2>1:30</h2>
+
+        <h2>
+            1m30s
+        </h2>
+
+        <div class="display">
+            01:30
+        </div>
+
+        <button class="start-btn">
+            START
+        </button>
+
     </div>
 
+
+    <!-- 1分35秒 -->
+
     <div class="card" data-seconds="95">
-        <h2>1:35</h2>
+
+        <h2>
+            1m35s
+        </h2>
+
+        <div class="display">
+            01:35
+        </div>
+
+        <button class="start-btn">
+            START
+        </button>
+
     </div>
 
 </div>
 
-<div id="timer">1:25</div>
+
+<!-- =========================
+     実行中画面
+========================= -->
+
+<div id="runningScreen"
+     class="running-screen">
+
+    <div id="runningNumber"
+         class="running-number">
+        01:25
+    </div>
+
+</div>
+
+
+<!-- =========================
+     BGM
+========================= -->
+
+<audio id="bgm"
+       src="./bgmpacman.mp3"
+       loop
+       preload="auto">
+</audio>
+
+
+<button id="audioStart"
+        class="audio-start">
+
+    TAP TO START MUSIC
+
+</button>
+
+
+<!-- Supabase -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+
 <script>
+
+/* =====================================================
+   Supabase
+===================================================== */
 
 const SUPABASE_URL =
     "https://hkogobchcvryyzuelfxw.supabase.co";
@@ -288,294 +431,760 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
     "sb_publishable_anNXiP87LyAP-HUE-5tlGQ_ia6q2xEE";
 
-const db = supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
-);
+
+const db =
+    supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
 
 
-const cards = document.querySelectorAll(".card");
-const timerDisplay = document.getElementById("timer");
+/* =====================================================
+   DOM
+===================================================== */
+
+const title =
+    document.getElementById("title");
+
+const hint =
+    document.getElementById("hint");
+
+const timers =
+    document.getElementById("timers");
+
+const cards =
+    document.querySelectorAll(".card");
+
+const runningScreen =
+    document.getElementById("runningScreen");
+
+const runningNumber =
+    document.getElementById("runningNumber");
+
+const audioStart =
+    document.getElementById("audioStart");
+
+const bgm =
+    document.getElementById("bgm");
+
+
+/* =====================================================
+   Timer variables
+===================================================== */
 
 let selected = 0;
-let active = false;
-let paused = false;
-let remaining = 0;
-let interval = null;
+
+let activeTimer = null;
+
+let timerInterval = null;
 
 
-/* タイマー表示 */
+/* =====================================================
+   時間表示
+===================================================== */
 
 function formatTime(seconds) {
 
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
+    seconds =
+        Math.max(
+            0,
+            Math.floor(seconds)
+        );
 
-    return `${m}:${String(s).padStart(2, "0")}`;
+    const minutes =
+        Math.floor(seconds / 60);
+
+    const secs =
+        seconds % 60;
+
+    return (
+        String(minutes).padStart(2, "0")
+        +
+        ":"
+        +
+        String(secs).padStart(2, "0")
+    );
 }
 
 
-/* 選択表示 */
+/* =====================================================
+   選択表示
+===================================================== */
 
 function updateSelection() {
 
-    cards.forEach((card, i) => {
-        card.classList.toggle(
-            "selected",
-            i === selected
-        );
-    });
+    cards.forEach(
+        (card, index) => {
 
-    timerDisplay.textContent =
-        formatTime(
-            Number(cards[selected].dataset.seconds)
-        );
-}
-
-
-/* タイマー開始 */
-
-function startTimer() {
-
-    if (active && !paused) return;
-
-    if (!active) {
-        remaining =
-            Number(cards[selected].dataset.seconds);
-
-        active = true;
-    }
-
-    paused = false;
-
-    timerDisplay.style.display = "flex";
-
-    document.querySelector(".cards").style.display =
-        "none";
-
-    interval = setInterval(() => {
-
-        if (!paused) {
-
-            remaining--;
-
-            timerDisplay.textContent =
-                formatTime(remaining);
+            card.classList.toggle(
+                "selected",
+                index === selected
+            );
 
         }
-
-    }, 1000);
+    );
 }
 
 
-/* 一時停止 */
+/* =====================================================
+   BGM
+   タイマーとは完全に独立
+===================================================== */
 
-function pauseTimer() {
-
-    if (!active) return;
-
-    paused = !paused;
-
-    if (paused) {
-
-        timerDisplay.style.color = "#FF6633";
-
-    } else {
-
-        timerDisplay.style.color = "#00ff00";
-
-    }
-}
-
-
-/* Supabaseへログ保存 */
-
-async function saveLog() {
-
-    const label =
-        cards[selected].querySelector("h2").textContent;
-
-    const formatted =
-        formatTime(remaining);
-
-    console.log("ログ保存開始");
-
-    console.log({
-        label: label,
-        remaining_seconds: remaining,
-        remaining_formatted: formatted
-    });
+async function playBGM() {
 
     try {
 
-        const { data, error } = await db
-            .from("timer_logs")
-            .insert({
-                label: label,
-                remaining_seconds: remaining,
-                remaining_formatted: formatted,
-                stopped_at: new Date().toISOString()
-            })
-            .select();
+        bgm.volume = 1.0;
 
-        if (error) {
+        await bgm.play();
 
-            console.error(
-                "Supabase INSERT ERROR:",
-                error
-            );
-
-            alert(
-                "ログの保存に失敗しました。\n\n" +
-                "Supabase error:\n" +
-                error.message
-            );
-
-            return false;
-        }
-
-        console.log(
-            "Supabase INSERT SUCCESS:",
-            data
+        audioStart.classList.add(
+            "hidden"
         );
-
-        return true;
 
     } catch (error) {
 
+        console.log(
+            "BGM autoplay blocked:",
+            error
+        );
+
+    }
+}
+
+
+/* BGMボタン */
+
+audioStart.addEventListener(
+    "click",
+    async (event) => {
+
+        event.stopPropagation();
+
+        await playBGM();
+
+    }
+);
+
+
+/*
+ * 画面のどこをタップしても
+ * BGM再生を試行
+ *
+ * iOS Safariではユーザー操作が
+ * 必要になるため、最初のタップを
+ * audio.play() に利用する
+ */
+
+document.addEventListener(
+    "pointerdown",
+    () => {
+
+        if (bgm.paused) {
+
+            playBGM();
+
+        }
+
+    },
+    {
+        passive: true
+    }
+);
+
+
+/* =====================================================
+   タイマー開始
+===================================================== */
+
+function startTimer(cardIndex) {
+
+    if (activeTimer) {
+        return;
+    }
+
+
+    const seconds =
+        Number(
+            cards[cardIndex]
+                .dataset
+                .seconds
+        );
+
+
+    activeTimer = {
+
+        cardIndex: cardIndex,
+
+        remaining: seconds,
+
+        paused: false
+
+    };
+
+
+    /* 初期画面を隠す */
+
+    title.classList.add(
+        "hidden"
+    );
+
+    hint.classList.add(
+        "hidden"
+    );
+
+    timers.classList.add(
+        "hidden"
+    );
+
+
+    /* 実行画面 */
+
+    runningScreen.classList.add(
+        "show"
+    );
+
+
+    runningNumber.textContent =
+        formatTime(seconds);
+
+
+    runningNumber.classList.remove(
+        "paused"
+    );
+
+
+    /* BGM */
+
+    playBGM();
+
+
+    /* タイマー開始 */
+
+    timerInterval =
+        setInterval(
+            () => {
+
+                if (!activeTimer) {
+                    return;
+                }
+
+
+                if (
+                    activeTimer.paused
+                ) {
+                    return;
+                }
+
+
+                activeTimer.remaining--;
+
+
+                if (
+                    activeTimer.remaining <= 0
+                ) {
+
+                    activeTimer.remaining = 0;
+
+                    runningNumber.textContent =
+                        "00:00";
+
+                    finishTimer();
+
+                    return;
+
+                }
+
+
+                runningNumber.textContent =
+                    formatTime(
+                        activeTimer.remaining
+                    );
+
+            },
+            1000
+        );
+
+}
+
+
+/* =====================================================
+   一時停止 / 再開
+===================================================== */
+
+function togglePause() {
+
+    if (!activeTimer) {
+        return;
+    }
+
+
+    activeTimer.paused =
+        !activeTimer.paused;
+
+
+    if (
+        activeTimer.paused
+    ) {
+
+        runningNumber.classList.add(
+            "paused"
+        );
+
+    } else {
+
+        runningNumber.classList.remove(
+            "paused"
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   Supabaseへログ保存
+===================================================== */
+
+async function saveLog() {
+
+    if (!activeTimer) {
+        return false;
+    }
+
+
+    const label =
+        cards[
+            activeTimer.cardIndex
+        ]
+        .querySelector("h2")
+        .textContent
+        .trim();
+
+
+    const remaining =
+        Math.max(
+            0,
+            Math.floor(
+                activeTimer.remaining
+            )
+        );
+
+
+    const formatted =
+        formatTime(
+            remaining
+        );
+
+
+    console.log(
+        "Saving timer log:",
+        {
+            label,
+            remaining,
+            formatted
+        }
+    );
+
+
+    const {
+        error
+    } = await db
+        .from("timer_logs")
+        .insert({
+
+            label:
+                label,
+
+            remaining_seconds:
+                remaining,
+
+            remaining_formatted:
+                formatted,
+
+            stopped_at:
+                new Date().toISOString()
+
+        });
+
+
+    if (error) {
+
         console.error(
-            "Supabase NETWORK ERROR:",
+            "Supabase INSERT ERROR:",
             error
         );
 
         alert(
-            "Supabaseへの通信に失敗しました。\n\n" +
-            "Error:\n" +
+            "ログの保存に失敗しました。\n\n"
+            +
             error.message
         );
 
         return false;
     }
+
+
+    console.log(
+        "Supabase INSERT SUCCESS"
+    );
+
+
+    return true;
+
 }
 
-/* タイマー停止 */
 
-async function stopTimer() {
+/* =====================================================
+   終了
+===================================================== */
 
-    if (!active) return;
+async function finishTimer() {
 
-    clearInterval(interval);
+    if (!activeTimer) {
+        return;
+    }
 
-    active = false;
-    paused = false;
+
+    clearInterval(
+        timerInterval
+    );
+
+    timerInterval = null;
+
+
+    /*
+     * 00:00としてログ保存
+     */
 
     await saveLog();
 
-    // ページ移動はしない
 
-    timerDisplay.style.display = "none";
+    /*
+     * 少しだけ00:00を表示してから
+     * 初期画面へ戻る
+     */
 
-    document.querySelector(".cards").style.display =
-        "flex";
+    setTimeout(
+        () => {
 
-    timerDisplay.style.color = "#00ff00";
+            returnToInitial();
 
-    remaining = 0;
+        },
+        800
+    );
 
-    updateSelection();
 }
 
 
-/* キーボード操作 */
+/* =====================================================
+   キャンセル
+===================================================== */
 
-document.addEventListener("keydown", (e) => {
+async function cancelTimer() {
 
-    if (e.code === "KeyJ") {
-
-        if (!active) {
-
-            selected--;
-
-            if (selected < 0)
-                selected = cards.length - 1;
-
-            updateSelection();
-        }
+    if (!activeTimer) {
+        return;
     }
 
 
-    if (e.code === "KeyL") {
+    clearInterval(
+        timerInterval
+    );
 
-        if (!active) {
-
-            selected++;
-
-            if (selected >= cards.length)
-                selected = 0;
-
-            updateSelection();
-        }
-    }
+    timerInterval = null;
 
 
-    if (e.code === "Space") {
+    /*
+     * キャンセル時点の残り時間を保存
+     */
 
-        e.preventDefault();
-
-        if (!active) {
-
-            startTimer();
-
-        } else {
-
-            pauseTimer();
-
-        }
-    }
+    await saveLog();
 
 
-    if (e.code === "Backspace") {
+    returnToInitial();
 
-        e.preventDefault();
+}
 
-        stopTimer();
-    }
 
-});
+/* =====================================================
+   初期画面へ戻る
+===================================================== */
 
-async function testSupabase() {
-    try {
-        const { data, error } = await db
-            .from("timer_logs")
-            .select("id")
-            .limit(1);
+function returnToInitial() {
 
-        if (error) {
-            alert(
-                "Supabase接続エラー\n\n" +
-                error.message
+    clearInterval(
+        timerInterval
+    );
+
+    timerInterval = null;
+
+
+    activeTimer = null;
+
+
+    runningScreen.classList.remove(
+        "show"
+    );
+
+
+    runningNumber.classList.remove(
+        "paused"
+    );
+
+
+    runningNumber.textContent =
+        formatTime(
+            Number(
+                cards[selected]
+                    .dataset
+                    .seconds
+            )
+        );
+
+
+    title.classList.remove(
+        "hidden"
+    );
+
+    hint.classList.remove(
+        "hidden"
+    );
+
+    timers.classList.remove(
+        "hidden"
+    );
+
+
+    updateSelection();
+
+}
+
+
+/* =====================================================
+   カードクリック
+===================================================== */
+
+cards.forEach(
+    (card, index) => {
+
+
+        card.addEventListener(
+            "click",
+            (event) => {
+
+                /*
+                 * タイマー実行中は無視
+                 */
+
+                if (activeTimer) {
+                    return;
+                }
+
+
+                selected = index;
+
+                updateSelection();
+
+
+                /*
+                 * BGM解除
+                 */
+
+                playBGM();
+
+            }
+        );
+
+
+        /*
+         * STARTボタン
+         */
+
+        const button =
+            card.querySelector(
+                ".start-btn"
             );
-            console.error(error);
+
+
+        button.addEventListener(
+            "click",
+            async (event) => {
+
+                event.stopPropagation();
+
+
+                if (activeTimer) {
+                    return;
+                }
+
+
+                selected = index;
+
+                updateSelection();
+
+
+                /*
+                 * ユーザー操作中にBGM開始
+                 */
+
+                await playBGM();
+
+
+                startTimer(
+                    index
+                );
+
+            }
+        );
+
+    }
+);
+
+
+/* =====================================================
+   キーボード操作
+===================================================== */
+
+document.addEventListener(
+    "keydown",
+    async (event) => {
+
+
+        /* J */
+
+        if (
+            event.code === "KeyJ"
+        ) {
+
+            if (!activeTimer) {
+
+                selected--;
+
+                if (
+                    selected < 0
+                ) {
+                    selected =
+                        cards.length - 1;
+                }
+
+                updateSelection();
+
+            }
+
             return;
         }
 
-        alert(
-            "Supabase接続成功！\n\n" +
-            "データ件数: " + data.length
-        );
 
-    } catch (e) {
-        alert(
-            "通信そのものに失敗しています。\n\n" +
-            e.toString()
-        );
-        console.error(e);
+        /* L */
+
+        if (
+            event.code === "KeyL"
+        ) {
+
+            if (!activeTimer) {
+
+                selected++;
+
+                if (
+                    selected >=
+                    cards.length
+                ) {
+                    selected = 0;
+                }
+
+                updateSelection();
+
+            }
+
+            return;
+        }
+
+
+        /* Space */
+
+        if (
+            event.code === "Space"
+        ) {
+
+            event.preventDefault();
+
+
+            /*
+             * タイマー未開始
+             */
+
+            if (!activeTimer) {
+
+                await playBGM();
+
+                startTimer(
+                    selected
+                );
+
+            }
+
+            /*
+             * 実行中
+             */
+
+            else {
+
+                togglePause();
+
+            }
+
+            return;
+        }
+
+
+        /* Backspace */
+
+        if (
+            event.code === "Backspace"
+        ) {
+
+            event.preventDefault();
+
+
+            if (activeTimer) {
+
+                await cancelTimer();
+
+            }
+
+            return;
+        }
+
     }
-}
+);
 
-testSupabase();
+
+/* =====================================================
+   初期化
+===================================================== */
 
 updateSelection();
+
+
+/*
+ * BGMボタンは最初に表示
+ */
+
+audioStart.classList.remove(
+    "hidden"
+);
+
+
+console.log(
+    "Timer initialized."
+);
+
+console.log(
+    "Supabase:",
+    SUPABASE_URL
+);
 
 </script>
 
