@@ -620,27 +620,26 @@ document.addEventListener(
 ===================================================== */
 
 function formatTime(seconds) {
-
-    seconds =
-        Math.max(
-            0,
-            Math.floor(seconds)
-        );
-
-    const minutes =
-        Math.floor(seconds / 60);
-
-    const secs =
-        seconds % 60;
-
-    return (
-        String(minutes).padStart(2, "0")
-        +
-        ":"
-        +
-        String(secs).padStart(2, "0")
+    const negative = seconds < 0;
+    const absoluteSeconds = Math.abs(
+        Math.floor(seconds)
     );
 
+    const minutes =
+        Math.floor(
+            absoluteSeconds / 60
+        )
+            .toString()
+            .padStart(2, "0");
+
+    const secs =
+        (absoluteSeconds % 60)
+            .toString()
+            .padStart(2, "0");
+
+    return negative
+        ? `-${minutes}:${secs}`
+        : `${minutes}:${secs}`;
 }
 
 
@@ -817,27 +816,15 @@ function startTimer(cardIndex) {
 
                 activeTimer.remaining--;
 
-
-                if (
-                    activeTimer.remaining <= 0
-                ) {
-
-                    activeTimer.remaining = 0;
-
-                    runningNumber.textContent =
-                        "00:00";
-
-                    finishTimer();
-
-                    return;
-
-                }
-
-
                 runningNumber.textContent =
                     formatTime(
                         activeTimer.remaining
                     );
+
+                runningNumber.classList.toggle(
+                    "over30",
+                    activeTimer.remaining >= 30
+            );
 
 　　　　　　　　　　　runningNumber.classList.toggle(
     　　　　　　　　　　　"over30",
@@ -910,11 +897,8 @@ async function saveLog() {
 
 
     const remaining =
-        Math.max(
-            0,
-            Math.floor(
-                activeTimer.remaining
-            )
+        Math.floor(
+            activeTimer.remaining
         );
 
 
