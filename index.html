@@ -1,9 +1,7 @@
-```html
 <!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-
 <meta name="viewport"
       content="width=device-width, initial-scale=1.0,
                maximum-scale=1.0, user-scalable=no">
@@ -22,11 +20,9 @@
     font-display: swap;
 }
 
-
 * {
     box-sizing: border-box;
 }
-
 
 html,
 body {
@@ -34,7 +30,6 @@ body {
     height: 100%;
     margin: 0;
 }
-
 
 body {
     font-family:
@@ -53,18 +48,12 @@ body {
     overflow: hidden;
 
     touch-action: manipulation;
-
-    /*
-     * キーボード入力用
-     * START後にbodyへフォーカスを移す
-     */
-    outline: none;
 }
 
 
 /* =========================
    初期画面
-   ========================= */
+========================= */
 
 h1 {
     font-size: 18px;
@@ -96,7 +85,7 @@ h1 {
 
 /* =========================
    タイマー選択エリア
-   ========================= */
+========================= */
 
 .timers {
     display: flex;
@@ -166,7 +155,7 @@ h1 {
 
 /* =========================
    STARTボタン
-   ========================= */
+========================= */
 
 button {
     border: none;
@@ -206,7 +195,7 @@ button {
 
 /* =========================
    実行中画面
-   ========================= */
+========================= */
 
 .running-screen {
 
@@ -260,15 +249,6 @@ button {
 }
 
 
-/* 残り30秒以上: 蛍光青 */
-
-.running-number.high-time {
-    color: #4666FF;
-}
-
-
-/* 一時停止中はポーズ色を最優先 */
-
 .running-number.paused {
     color: #FF6633;
 }
@@ -276,7 +256,7 @@ button {
 
 /* =========================
    BGMボタン
-   ========================= */
+========================= */
 
 .audio-start {
 
@@ -311,7 +291,7 @@ button {
 
 /* =========================
    非表示
-   ========================= */
+========================= */
 
 .hidden {
     display: none !important;
@@ -321,12 +301,12 @@ button {
 </head>
 
 
-<body tabindex="-1">
+<body>
 
 
 <!-- =========================
      初期画面
-     ========================= -->
+========================= -->
 
 <h1 id="title">
     TIMER
@@ -343,9 +323,7 @@ button {
 
     <!-- 1分25秒 -->
 
-    <div class="card selected"
-         data-seconds="85"
-         data-letter="s">
+    <div class="card selected" data-seconds="85">
 
         <h2>
             1m25s
@@ -364,9 +342,7 @@ button {
 
     <!-- 1分30秒 -->
 
-    <div class="card"
-         data-seconds="90"
-         data-letter="t">
+    <div class="card" data-seconds="90">
 
         <h2>
             1m30s
@@ -385,9 +361,7 @@ button {
 
     <!-- 1分35秒 -->
 
-    <div class="card"
-         data-seconds="95"
-         data-letter="o">
+    <div class="card" data-seconds="95">
 
         <h2>
             1m35s
@@ -403,13 +377,12 @@ button {
 
     </div>
 
-
 </div>
 
 
 <!-- =========================
      実行中画面
-     ========================= -->
+========================= -->
 
 <div id="runningScreen"
      class="running-screen">
@@ -424,7 +397,7 @@ button {
 
 <!-- =========================
      BGM
-     ========================= -->
+========================= -->
 
 <audio id="bgm"
        src="./bgmpacman.mp3"
@@ -450,7 +423,7 @@ button {
 
 /* =====================================================
    Supabase
-   ===================================================== */
+===================================================== */
 
 const SUPABASE_URL =
     "https://hkogobchcvryyzuelfxw.supabase.co";
@@ -468,7 +441,7 @@ const db =
 
 /* =====================================================
    DOM
-   ===================================================== */
+===================================================== */
 
 const title =
     document.getElementById("title");
@@ -497,7 +470,7 @@ const bgm =
 
 /* =====================================================
    Timer variables
-   ===================================================== */
+===================================================== */
 
 let selected = 0;
 
@@ -508,7 +481,7 @@ let timerInterval = null;
 
 /* =====================================================
    時間表示
-   ===================================================== */
+===================================================== */
 
 function formatTime(seconds) {
 
@@ -535,31 +508,8 @@ function formatTime(seconds) {
 
 
 /* =====================================================
-   数字の色更新
-   ===================================================== */
-
-function updateNumberColor(remaining) {
-
-    if (remaining >= 30) {
-
-        runningNumber.classList.add(
-            "high-time"
-        );
-
-    } else {
-
-        runningNumber.classList.remove(
-            "high-time"
-        );
-
-    }
-
-}
-
-
-/* =====================================================
    選択表示
-   ===================================================== */
+===================================================== */
 
 function updateSelection() {
 
@@ -579,7 +529,7 @@ function updateSelection() {
 /* =====================================================
    BGM
    タイマーとは完全に独立
-   ===================================================== */
+===================================================== */
 
 async function playBGM() {
 
@@ -593,8 +543,6 @@ async function playBGM() {
             "hidden"
         );
 
-        audioStart.blur();
-
     } catch (error) {
 
         console.log(
@@ -603,13 +551,10 @@ async function playBGM() {
         );
 
     }
-
 }
 
 
-/* =====================================================
-   BGMボタン
-   ===================================================== */
+/* BGMボタン */
 
 audioStart.addEventListener(
     "click",
@@ -623,55 +568,35 @@ audioStart.addEventListener(
 );
 
 
-/* =====================================================
-   画面のタップ/クリックでBGM再生を試行
-   ===================================================== */
-
-function tryStartMusicFromAnyTap() {
-
-    if (bgm.paused) {
-
-        playBGM();
-
-    }
-
-}
-
+/*
+ * 画面のどこをタップしても
+ * BGM再生を試行
+ *
+ * iOS Safariではユーザー操作が
+ * 必要になるため、最初のタップを
+ * audio.play() に利用する
+ */
 
 document.addEventListener(
     "pointerdown",
-    tryStartMusicFromAnyTap,
+    () => {
+
+        if (bgm.paused) {
+
+            playBGM();
+
+        }
+
+    },
     {
-        capture: true,
         passive: true
     }
 );
 
 
-document.addEventListener(
-    "click",
-    tryStartMusicFromAnyTap,
-    {
-        capture: true
-    }
-);
-
-
-/* =====================================================
-   キーボードフォーカス
-   ===================================================== */
-
-/*
- * START後にキーボードイベントを確実に受け取るため、
- * bodyをフォーカス可能にしておく。
- */
-
-document.body.tabIndex = -1;
-
-
 /* =====================================================
    タイマー開始
-   ===================================================== */
+===================================================== */
 
 function startTimer(cardIndex) {
 
@@ -697,28 +622,6 @@ function startTimer(cardIndex) {
         paused: false
 
     };
-
-
-    /*
-     * フォーカスされている要素を解除
-     */
-
-    if (
-        document.activeElement
-        instanceof
-        HTMLElement
-    ) {
-
-        document.activeElement.blur();
-
-    }
-
-
-    /*
-     * START後はbodyにフォーカスを移す
-     */
-
-    document.body.focus();
 
 
     /* 初期画面を隠す */
@@ -749,11 +652,6 @@ function startTimer(cardIndex) {
 
     runningNumber.classList.remove(
         "paused"
-    );
-
-
-    updateNumberColor(
-        seconds
     );
 
 
@@ -792,10 +690,6 @@ function startTimer(cardIndex) {
                     runningNumber.textContent =
                         "00:00";
 
-                    updateNumberColor(
-                        0
-                    );
-
                     finishTimer();
 
                     return;
@@ -808,11 +702,6 @@ function startTimer(cardIndex) {
                         activeTimer.remaining
                     );
 
-
-                updateNumberColor(
-                    activeTimer.remaining
-                );
-
             },
             1000
         );
@@ -822,7 +711,7 @@ function startTimer(cardIndex) {
 
 /* =====================================================
    一時停止 / 再開
-   ===================================================== */
+===================================================== */
 
 function togglePause() {
 
@@ -855,55 +744,23 @@ function togglePause() {
 
 
 /* =====================================================
-   ラベル用の連番を取得
-   ===================================================== */
-
-async function getNextLabelNumber(letter) {
-
-    const {
-        count,
-        error
-    } = await db
-        .from("timer_logs")
-        .select(
-            "id",
-            {
-                count: "exact",
-                head: true
-            }
-        )
-        .ilike(
-            "label",
-            letter + "%"
-        );
-
-
-    if (error) {
-
-        console.error(
-            "Supabase COUNT ERROR:",
-            error
-        );
-
-        return null;
-    }
-
-
-    return (count || 0) + 1;
-
-}
-
-
-/* =====================================================
    Supabaseへログ保存
-   ※残り1分以上の場合は保存しない
-   ===================================================== */
+===================================================== */
 
 async function saveLog() {
 
     if (!activeTimer) {
         return false;
     }
+
+
+    const label =
+        cards[
+            activeTimer.cardIndex
+        ]
+        .querySelector("h2")
+        .textContent
+        .trim();
 
 
     const remaining =
@@ -913,49 +770,6 @@ async function saveLog() {
                 activeTimer.remaining
             )
         );
-
-
-    /*
-     * 残り1分以上の場合はログに残さない
-     */
-
-    if (remaining >= 60) {
-
-        console.log(
-            "Skip saving log: remaining >= 60s",
-            remaining
-        );
-
-        return false;
-    }
-
-
-    const letter =
-        cards[
-            activeTimer.cardIndex
-        ]
-        .dataset
-        .letter;
-
-
-    const n =
-        await getNextLabelNumber(
-            letter
-        );
-
-
-    if (n === null) {
-
-        alert(
-            "ログ番号の取得に失敗しました。"
-        );
-
-        return false;
-    }
-
-
-    const label =
-        letter + n;
 
 
     const formatted =
@@ -1024,7 +838,7 @@ async function saveLog() {
 
 /* =====================================================
    終了
-   ===================================================== */
+===================================================== */
 
 async function finishTimer() {
 
@@ -1066,7 +880,7 @@ async function finishTimer() {
 
 /* =====================================================
    キャンセル
-   ===================================================== */
+===================================================== */
 
 async function cancelTimer() {
 
@@ -1096,7 +910,7 @@ async function cancelTimer() {
 
 /* =====================================================
    初期画面へ戻る
-   ===================================================== */
+===================================================== */
 
 function returnToInitial() {
 
@@ -1110,21 +924,6 @@ function returnToInitial() {
     activeTimer = null;
 
 
-    /*
-     * フォーカスを解除
-     */
-
-    if (
-        document.activeElement
-        instanceof
-        HTMLElement
-    ) {
-
-        document.activeElement.blur();
-
-    }
-
-
     runningScreen.classList.remove(
         "show"
     );
@@ -1135,23 +934,14 @@ function returnToInitial() {
     );
 
 
-    const nextSeconds =
-        Number(
-            cards[selected]
-                .dataset
-                .seconds
-        );
-
-
     runningNumber.textContent =
         formatTime(
-            nextSeconds
+            Number(
+                cards[selected]
+                    .dataset
+                    .seconds
+            )
         );
-
-
-    updateNumberColor(
-        nextSeconds
-    );
 
 
     title.classList.remove(
@@ -1174,7 +964,7 @@ function returnToInitial() {
 
 /* =====================================================
    カードクリック
-   ===================================================== */
+===================================================== */
 
 cards.forEach(
     (card, index) => {
@@ -1255,165 +1045,125 @@ cards.forEach(
 
 /* =====================================================
    キーボード操作
-   ===================================================== */
+===================================================== */
 
-/*
- * 重要：
- *
- * documentではなくwindowで、
- * capture phaseを使ってkeydownを取得する。
- *
- * START後はactiveTimerが存在するので、
- *
- * Space     → pause / resume
- * Backspace → cancel
- *
- * とする。
- */
-
-function handleKeyDown(event) {
-
-    /*
-     * タイマー実行中
-     */
-
-    if (activeTimer) {
-
-        /*
-         * Space
-         * 一時停止 / 再開
-         */
-
-        if (event.code === "Space") {
-
-            event.preventDefault();
-
-            togglePause();
-
-            return;
-        }
-
-
-        /*
-         * Backspace
-         * キャンセル
-         */
-
-        if (event.code === "Backspace") {
-
-            event.preventDefault();
-
-            cancelTimer();
-
-            return;
-        }
-
-
-        /*
-         * 実行中はJ/Lを無視
-         */
-
-        return;
-    }
-
-
-    /*
-     * =========================
-     * タイマー開始前
-     * =========================
-     */
-
-
-    /*
-     * J
-     * 前のタイマー
-     */
-
-    if (event.code === "KeyJ") {
-
-        event.preventDefault();
-
-        selected--;
-
-        if (selected < 0) {
-            selected = cards.length - 1;
-        }
-
-        updateSelection();
-
-        return;
-    }
-
-
-    /*
-     * L
-     * 次のタイマー
-     */
-
-    if (event.code === "KeyL") {
-
-        event.preventDefault();
-
-        selected++;
-
-        if (selected >= cards.length) {
-            selected = 0;
-        }
-
-        updateSelection();
-
-        return;
-    }
-
-
-    /*
-     * Space
-     * タイマー開始
-     */
-
-    if (event.code === "Space") {
-
-        event.preventDefault();
-
-
-        /*
-         * 先にタイマーを開始する。
-         *
-         * BGMのawaitでキー処理を
-         * 待たせない。
-         */
-
-        startTimer(selected);
-
-
-        /*
-         * BGMは非同期で再生を試行
-         */
-
-        playBGM();
-
-        return;
-    }
-
-}
-
-
-/*
- * window + capture
- *
- * これが今回の重要な変更点。
- */
-
-window.addEventListener(
+document.addEventListener(
     "keydown",
-    handleKeyDown,
-    true
+    async (event) => {
+
+
+        /* J */
+
+        if (
+            event.code === "KeyJ"
+        ) {
+
+            if (!activeTimer) {
+
+                selected--;
+
+                if (
+                    selected < 0
+                ) {
+                    selected =
+                        cards.length - 1;
+                }
+
+                updateSelection();
+
+            }
+
+            return;
+        }
+
+
+        /* L */
+
+        if (
+            event.code === "KeyL"
+        ) {
+
+            if (!activeTimer) {
+
+                selected++;
+
+                if (
+                    selected >=
+                    cards.length
+                ) {
+                    selected = 0;
+                }
+
+                updateSelection();
+
+            }
+
+            return;
+        }
+
+
+        /* Space */
+
+        if (
+            event.code === "Space"
+        ) {
+
+            event.preventDefault();
+
+
+            /*
+             * タイマー未開始
+             */
+
+            if (!activeTimer) {
+
+                await playBGM();
+
+                startTimer(
+                    selected
+                );
+
+            }
+
+            /*
+             * 実行中
+             */
+
+            else {
+
+                togglePause();
+
+            }
+
+            return;
+        }
+
+
+        /* Backspace */
+
+        if (
+            event.code === "Backspace"
+        ) {
+
+            event.preventDefault();
+
+
+            if (activeTimer) {
+
+                await cancelTimer();
+
+            }
+
+            return;
+        }
+
+    }
 );
 
 
 /* =====================================================
    初期化
-   ===================================================== */
+===================================================== */
 
 updateSelection();
 
@@ -1431,7 +1181,6 @@ console.log(
     "Timer initialized."
 );
 
-
 console.log(
     "Supabase:",
     SUPABASE_URL
@@ -1441,4 +1190,3 @@ console.log(
 
 </body>
 </html>
-```
