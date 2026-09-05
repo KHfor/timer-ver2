@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
 
 <meta charset="UTF-8">
+
 <meta name="viewport"
       content="width=device-width, initial-scale=1.0">
 
@@ -11,72 +13,159 @@
 <style>
 
 @font-face {
+
     font-family: DSEG7;
-    src: url("https://manzdev.github.io/twitch-casio/dseg7-bold.woff2");
+
+    src:
+        url("https://manzdev.github.io/twitch-casio/dseg7-bold.woff2");
+
 }
+
 
 body {
+
     background: black;
+
     color: white;
+
     font-family: Arial, sans-serif;
+
     padding: 30px;
+
 }
+
 
 h1 {
+
     text-align: center;
+
 }
 
+
 table {
+
     width: 100%;
+
     border-collapse: collapse;
+
     margin-top: 30px;
+
 }
+
 
 th,
 td {
+
     border: 1px solid #555;
+
     padding: 12px;
+
     text-align: center;
+
 }
+
 
 th {
+
     background: #222;
+
 }
+
 
 .blue {
+
     color: #4666FF;
+
 }
 
+
 button {
+
     display: block;
+
     margin: 30px auto;
+
     padding: 12px 30px;
+
     font-size: 16px;
+
 }
+
+
+/* =========================
+   番号列
+========================= */
+
+.number-cell {
+
+    font-weight: bold;
+
+    min-width: 60px;
+
+}
+
+
+/* S */
+
+.s-number {
+    color: white;
+}
+
+
+/* W */
+
+.w-number {
+    color: white;
+}
+
+
+/* T */
+
+.t-number {
+    color: white;
+}
+
 
 </style>
 
 </head>
 
+
 <body>
 
-<h1>Timer Log</h1>
+
+<h1>
+    Timer Log
+</h1>
+
 
 <table>
 
 <thead>
 
 <tr>
+
     <th>STOPPED AT</th>
+
     <th>TIMER</th>
+
     <th>TIME LEFT</th>
+
+    <th>S No.</th>
+
+    <th>W No.</th>
+
+    <th>T No.</th>
+
 </tr>
 
 </thead>
 
+
 <tbody id="logBody"></tbody>
 
 </table>
+
 
 <button id="clear">
     CLEAR LOG
@@ -85,28 +174,106 @@ button {
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+
 <script>
+
+/* =====================================================
+   Supabase
+===================================================== */
 
 const SUPABASE_URL =
     "https://hkogobchcvryyzuelfxw.supabase.co";
 
+
 const SUPABASE_KEY =
     "sb_publishable_anNXiP87LyAP-HUE-5tlGQ_ia6q2xEE";
 
-const db = supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
-);
 
+const db =
+    supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+/* =====================================================
+   タイマー名称判定
+===================================================== */
+
+/*
+ *
+ * 1m25s = T
+ * 1m30s = W
+ * 1m35s = S
+ *
+ */
+
+function getTimerName(label) {
+
+    const value =
+        String(label)
+            .trim()
+            .toLowerCase();
+
+
+    if (
+        value === "1m25s"
+    ) {
+
+        return "T";
+
+    }
+
+
+    if (
+        value === "1m30s"
+    ) {
+
+        return "W";
+
+    }
+
+
+    if (
+        value === "1m35s"
+    ) {
+
+        return "S";
+
+    }
+
+
+    return null;
+
+}
+
+
+/* =====================================================
+   ログ読み込み
+===================================================== */
 
 async function loadLog() {
 
-    const { data, error } = await db
+    const {
+        data,
+        error
+    } = await db
+
         .from("timer_logs")
+
         .select("*")
+
+        /*
+         * まず古い順に取得
+         *
+         * ここで番号を付ける
+         */
+
         .order(
             "stopped_at",
-            { ascending: false }
+            {
+                ascending: true
+            }
         );
 
 
@@ -114,108 +281,367 @@ async function loadLog() {
 
         console.error(error);
 
-        document.getElementById("logBody").innerHTML =
+
+        document.getElementById(
+            "logBody"
+        ).innerHTML =
+
             `<tr>
-                <td colspan="3">
+
+                <td colspan="6">
                     FAILED TO LOAD LOG
                 </td>
+
              </tr>`;
 
         return;
+
     }
 
 
     const body =
-        document.getElementById("logBody");
+        document.getElementById(
+            "logBody"
+        );
+
 
     body.innerHTML = "";
 
 
-    data.forEach(row => {
+    /*
+     * ==========================================
+     * S / W / T の3系統を独立してカウント
+     * ==========================================
+     */
 
-        const tr =
-            document.createElement("tr");
+    let sCount = 0;
 
-        if (row.remaining_seconds >= 30) {
-            tr.classList.add("blue");
+    let wCount = 0;
+
+    let tCount = 0;
+
+
+    /*
+     * 各ログに番号を記録
+     */
+
+    const numberedLogs =
+        data.map(row => {
+
+            const timerName =
+                getTimerName(
+                    row.label
+                );
+
+
+            let sNumber = "";
+
+            let wNumber = "";
+
+            let tNumber = "";
+
+
+            /*
+             * S
+             */
+
+            if (
+                timerName === "S"
+            ) {
+
+                sCount++;
+
+                sNumber =
+                    sCount;
+
+            }
+
+
+            /*
+             * W
+             */
+
+            if (
+                timerName === "W"
+            ) {
+
+                wCount++;
+
+                wNumber =
+                    wCount;
+
+            }
+
+
+            /*
+             * T
+             */
+
+            if (
+                timerName === "T"
+            ) {
+
+                tCount++;
+
+                tNumber =
+                    tCount;
+
+            }
+
+
+            return {
+
+                row,
+
+                timerName,
+
+                sNumber,
+
+                wNumber,
+
+                tNumber
+
+            };
+
+        });
+
+
+    /*
+     * ==========================================
+     * 表示は新しい順
+     * ==========================================
+     */
+
+    numberedLogs.reverse();
+
+
+    /*
+     * ==========================================
+     * HTML表示
+     * ==========================================
+     */
+
+    numberedLogs.forEach(
+        item => {
+
+            const row =
+                item.row;
+
+
+            const tr =
+                document.createElement(
+                    "tr"
+                );
+
+
+            /*
+             * 残り30秒以上は青
+             */
+
+            if (
+                row.remaining_seconds >= 30
+            ) {
+
+                tr.classList.add(
+                    "blue"
+                );
+
+            }
+
+
+            const date =
+                new Date(
+                    row.stopped_at
+                );
+
+
+            /*
+             * TIMER名称
+             *
+             * ここは従来どおり
+             * 1m25s / 1m30s / 1m35s
+             */
+
+            const timerLabel =
+                escapeHtml(
+                    row.label
+                );
+
+
+            tr.innerHTML = `
+
+                <td>
+                    ${date.toLocaleString("ja-JP")}
+                </td>
+
+
+                <td>
+                    ${timerLabel}
+                </td>
+
+
+                <td>
+                    ${escapeHtml(
+                        row.remaining_formatted
+                    )}
+                </td>
+
+
+                <td class="number-cell s-number">
+                    ${
+                        item.sNumber === ""
+                            ? ""
+                            : item.sNumber
+                    }
+                </td>
+
+
+                <td class="number-cell w-number">
+                    ${
+                        item.wNumber === ""
+                            ? ""
+                            : item.wNumber
+                    }
+                </td>
+
+
+                <td class="number-cell t-number">
+                    ${
+                        item.tNumber === ""
+                            ? ""
+                            : item.tNumber
+                    }
+                </td>
+
+            `;
+
+
+            body.appendChild(
+                tr
+            );
+
         }
-
-
-        const date =
-            new Date(row.stopped_at);
-
-        tr.innerHTML = `
-            <td>
-                ${date.toLocaleString("ja-JP")}
-            </td>
-
-            <td>
-                ${row.label}
-            </td>
-
-            <td>
-                ${row.remaining_formatted}
-            </td>
-        `;
-
-        body.appendChild(tr);
-
-    });
+    );
 
 }
 
 
-/* ログ全削除 */
+/* =====================================================
+   HTMLエスケープ
+===================================================== */
 
-document.getElementById("clear")
-    .addEventListener("click", async () => {
+function escapeHtml(value) {
 
-        if (!confirm("ログをすべて削除しますか？"))
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
+}
+
+
+/* =====================================================
+   ログ全削除
+===================================================== */
+
+document.getElementById(
+    "clear"
+)
+.addEventListener(
+    "click",
+    async () => {
+
+
+        if (
+            !confirm(
+                "ログをすべて削除しますか？"
+            )
+        ) {
+
             return;
 
-        const { error } = await db
+        }
+
+
+        const {
+            error
+        } = await db
+
             .from("timer_logs")
+
             .delete()
-            .not("id", "is", null);
+
+            .not(
+                "id",
+                "is",
+                null
+            );
+
 
         if (error) {
 
             alert(
-                "削除に失敗しました。\n\n" +
+                "削除に失敗しました。\n\n"
+                +
                 error.message
             );
 
             return;
+
         }
+
 
         loadLog();
 
-    });
+    }
+);
 
 
-/* 初回読み込み */
+/* =====================================================
+   初回読み込み
+===================================================== */
 
 loadLog();
 
 
-/* Realtime */
+/* =====================================================
+   Realtime
+===================================================== */
 
 db
-    .channel("timer-log-realtime")
-    .on(
-        "postgres_changes",
-        {
-            event: "*",
-            schema: "public",
-            table: "timer_logs"
-        },
-        () => {
-            loadLog();
-        }
+
+    .channel(
+        "timer-log-realtime"
     )
+
+    .on(
+
+        "postgres_changes",
+
+        {
+
+            event: "*",
+
+            schema: "public",
+
+            table: "timer_logs"
+
+        },
+
+        () => {
+
+            loadLog();
+
+        }
+
+    )
+
     .subscribe();
 
 </script>
 
 </body>
+
 </html>
