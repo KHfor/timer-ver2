@@ -47,6 +47,28 @@
             background: #666;
         }
 
+
+        /* =================================
+           LOG + COUNT SUMMARY
+        ================================= */
+
+        .log-layout {
+            display: flex;
+            align-items: flex-start;
+            gap: 30px;
+            width: 100%;
+        }
+
+        .log-area {
+            flex: 1;
+            min-width: 0;
+        }
+
+
+        /* =================================
+           TABLE
+        ================================= */
+
         .table-container {
             width: 100%;
             overflow-x: auto;
@@ -84,36 +106,162 @@
             text-align: center;
             color: #999;
         }
+
+
+        /* =================================
+           COUNT SUMMARY
+        ================================= */
+
+        .count-summary {
+            width: 280px;
+            flex-shrink: 0;
+
+            background: #181818;
+            border: 1px solid #444;
+
+            padding: 20px;
+        }
+
+        .count-summary h2 {
+            margin: 0 0 25px;
+
+            font-size: 18px;
+            letter-spacing: 1px;
+        }
+
+        .count-summary h3 {
+            margin: 20px 0 10px;
+
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .count-list {
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .count-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            gap: 15px;
+
+            padding: 3px 0;
+
+            white-space: nowrap;
+        }
+
+        .count-value {
+            font-weight: bold;
+        }
+
+
+        /* =================================
+           画面が狭い場合
+        ================================= */
+
+        @media (max-width: 800px) {
+
+            .log-layout {
+                flex-direction: column;
+            }
+
+            .count-summary {
+                width: 100%;
+            }
+
+        }
     </style>
 </head>
 
 <body>
 
     <div class="top-bar">
+
         <h1>Timer Log</h1>
 
         <button id="clearButton">
             Clear Log
         </button>
+
     </div>
 
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>STOPPED AT</th>
-                    <th>TIMER</th>
-                    <th>TIME LEFT</th>
-                    <th>SWT</th>
-                </tr>
-            </thead>
 
-            <tbody id="logBody">
-            </tbody>
-        </table>
+    <div class="log-layout">
+
+        <!-- =========================
+             左：既存のログ
+        ========================= -->
+
+        <div class="log-area">
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+                            <th>STOPPED AT</th>
+                            <th>TIMER</th>
+                            <th>TIME LEFT</th>
+                            <th>SWT</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="logBody">
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+
+        <!-- =========================
+             右：COUNT SUMMARY
+        ========================= -->
+
+        <div class="count-summary">
+
+            <h2>COUNT SUMMARY</h2>
+
+
+            <!-- =========================
+                 1日あたり
+            ========================= -->
+
+            <h3>1日あたり</h3>
+
+            <div
+                id="dailyCounts"
+                class="count-list"
+            ></div>
+
+
+            <!-- =========================
+                 1時間あたり
+            ========================= -->
+
+            <h3>1時間あたり</h3>
+
+            <div
+                id="hourlyCounts"
+                class="count-list"
+            ></div>
+
+        </div>
+
     </div>
+
 
     <script>
+
         const SUPABASE_URL =
             "https://hkogobchcvryyzuelfx.supabase.co";
 
@@ -132,12 +280,14 @@
         // --------------------------------
 
         function escapeHtml(value) {
+
             return String(value ?? "")
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;")
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
+
         }
 
 
@@ -164,6 +314,235 @@
             }
 
             return "";
+
+        }
+
+
+        // --------------------------------
+        // COUNT VALUE
+        //
+        // S = 1
+        // W = 2
+        // T = 3
+        // --------------------------------
+
+        function getCountValue(timerName) {
+
+            if (timerName === "S") {
+                return 1;
+            }
+
+            if (timerName === "W") {
+                return 2;
+            }
+
+            if (timerName === "T") {
+                return 3;
+            }
+
+            return 0;
+
+        }
+
+
+        // --------------------------------
+        // COUNT SUMMARY
+        // --------------------------------
+
+        function updateCountSummary(logs) {
+
+            const hourly = {};
+            const daily = {};
+
+
+            // =================================
+            // ログを集計
+            // =================================
+
+            logs.forEach(log => {
+
+                const timerName =
+                    getTimerName(log.label);
+
+                const value =
+                    getCountValue(timerName);
+
+
+                // S / W / T 以外は無視
+                if (value === 0) {
+                    return;
+                }
+
+
+                const date =
+                    new Date(log.stopped_at);
+
+
+                if (
+                    Number.isNaN(
+                        date.getTime()
+                    )
+                ) {
+                    return;
+                }
+
+
+                // --------------------------------
+                // 日付
+                // --------------------------------
+
+                const year =
+                    date.getFullYear();
+
+                const month =
+                    String(
+                        date.getMonth() + 1
+                    ).padStart(2, "0");
+
+                const day =
+                    String(
+                        date.getDate()
+                    ).padStart(2, "0");
+
+                const hour =
+                    String(
+                        date.getHours()
+                    ).padStart(2, "0");
+
+
+                // --------------------------------
+                // 日単位
+                // --------------------------------
+
+                const dayKey =
+                    `${year}/${month}/${day}`;
+
+
+                // --------------------------------
+                // 時間単位
+                // --------------------------------
+
+                const hourKey =
+                    `${year}/${month}/${day} ${hour}:00`;
+
+
+                // --------------------------------
+                // 加算
+                // --------------------------------
+
+                daily[dayKey] =
+                    (daily[dayKey] || 0)
+                    + value;
+
+                hourly[hourKey] =
+                    (hourly[hourKey] || 0)
+                    + value;
+
+            });
+
+
+            // =================================
+            // 1日あたり
+            // =================================
+
+            const dailyContainer =
+                document.getElementById(
+                    "dailyCounts"
+                );
+
+
+            const dailyKeys =
+                Object.keys(daily)
+                    .filter(key => {
+                        return daily[key] > 0;
+                    })
+                    .sort()
+                    .reverse();
+
+
+            if (dailyKeys.length === 0) {
+
+                dailyContainer.innerHTML =
+                    `<div>データなし</div>`;
+
+            } else {
+
+                dailyContainer.innerHTML =
+                    dailyKeys
+                        .map(key => {
+
+                            return `
+                                <div class="count-row">
+
+                                    <span>
+                                        ${escapeHtml(key)}
+                                    </span>
+
+                                    <span class="count-value">
+                                        ${daily[key]}
+                                    </span>
+
+                                </div>
+                            `;
+
+                        })
+                        .join("");
+
+            }
+
+
+            // =================================
+            // 1時間あたり
+            // =================================
+
+            const hourlyContainer =
+                document.getElementById(
+                    "hourlyCounts"
+                );
+
+
+            const hourlyKeys =
+                Object.keys(hourly)
+                    .filter(key => {
+
+                        // 0件の時間帯は表示しない
+                        return hourly[key] > 0;
+
+                    })
+                    .sort()
+                    .reverse();
+
+
+            if (hourlyKeys.length === 0) {
+
+                hourlyContainer.innerHTML =
+                    `<div>データなし</div>`;
+
+            } else {
+
+                hourlyContainer.innerHTML =
+                    hourlyKeys
+                        .map(key => {
+
+                            return `
+                                <div class="count-row">
+
+                                    <span>
+                                        ${escapeHtml(key)}
+                                    </span>
+
+                                    <span class="count-value">
+                                        ${hourly[key]}
+                                    </span>
+
+                                </div>
+                            `;
+
+                        })
+                        .join("");
+
+            }
+
         }
 
 
@@ -173,20 +552,24 @@
 
         async function loadLogs() {
 
-            const { data, error } = await supabaseClient
-                .from("timer_logs")
-                .select("*")
-                .order("stopped_at", {
-                    ascending: true
-                });
+            const { data, error } =
+                await supabaseClient
+                    .from("timer_logs")
+                    .select("*")
+                    .order("stopped_at", {
+                        ascending: true
+                    });
+
 
             if (error) {
+
                 console.error(
                     "ログ取得エラー:",
                     error
                 );
 
                 return;
+
             }
 
 
@@ -211,19 +594,27 @@
 
                     sCount++;
 
-                    swtNo = `S${sCount}`;
+                    swtNo =
+                        `S${sCount}`;
 
-                } else if (timerName === "W") {
+                } else if (
+                    timerName === "W"
+                ) {
 
                     wCount++;
 
-                    swtNo = `W${wCount}`;
+                    swtNo =
+                        `W${wCount}`;
 
-                } else if (timerName === "T") {
+                } else if (
+                    timerName === "T"
+                ) {
 
                     tCount++;
 
-                    swtNo = `T${tCount}`;
+                    swtNo =
+                        `T${tCount}`;
+
                 }
 
 
@@ -231,6 +622,7 @@
                     ...log,
                     swtNo
                 };
+
             });
 
 
@@ -242,8 +634,14 @@
 
 
             const logBody =
-                document.getElementById("logBody");
+                document.getElementById(
+                    "logBody"
+                );
 
+
+            // --------------------------------
+            // ログが0件の場合
+            // --------------------------------
 
             if (logs.length === 0) {
 
@@ -258,7 +656,12 @@
                     </tr>
                 `;
 
+
+                // 集計もクリア
+                updateCountSummary(logs);
+
                 return;
+
             }
 
 
@@ -266,37 +669,50 @@
             // テーブル生成
             // --------------------------------
 
-            logBody.innerHTML = logs.map(log => {
+            logBody.innerHTML =
+                logs.map(log => {
 
-                return `
-                    <tr>
-                        <td>
-                            ${escapeHtml(
-                                formatDate(log.stopped_at)
-                            )}
-                        </td>
+                    return `
+                        <tr>
 
-                        <td>
-                            ${escapeHtml(
-                                log.label
-                            )}
-                        </td>
+                            <td>
+                                ${escapeHtml(
+                                    formatDate(
+                                        log.stopped_at
+                                    )
+                                )}
+                            </td>
 
-                        <td>
-                            ${escapeHtml(
-                                log.remaining_formatted
-                            )}
-                        </td>
+                            <td>
+                                ${escapeHtml(
+                                    log.label
+                                )}
+                            </td>
 
-                        <td class="swt">
-                            ${escapeHtml(
-                                log.swtNo
-                            )}
-                        </td>
-                    </tr>
-                `;
+                            <td>
+                                ${escapeHtml(
+                                    log.remaining_formatted
+                                )}
+                            </td>
 
-            }).join("");
+                            <td class="swt">
+                                ${escapeHtml(
+                                    log.swtNo
+                                )}
+                            </td>
+
+                        </tr>
+                    `;
+
+                }).join("");
+
+
+            // --------------------------------
+            // COUNT SUMMARY 更新
+            // --------------------------------
+
+            updateCountSummary(logs);
+
         }
 
 
@@ -310,12 +726,19 @@
                 return "";
             }
 
+
             const date =
                 new Date(dateString);
 
-            if (Number.isNaN(date.getTime())) {
+
+            if (
+                Number.isNaN(
+                    date.getTime()
+                )
+            ) {
                 return dateString;
             }
+
 
             return date.toLocaleString(
                 "ja-JP",
@@ -328,6 +751,7 @@
                     second: "2-digit"
                 }
             );
+
         }
 
 
@@ -345,6 +769,7 @@
                         confirm(
                             "すべてのログを削除しますか？"
                         );
+
 
                     if (!result) {
                         return;
@@ -369,15 +794,18 @@
                             error
                         );
 
+
                         alert(
                             "ログの削除に失敗しました。"
                         );
 
                         return;
+
                     }
 
 
                     await loadLogs();
+
                 }
             );
 
@@ -387,7 +815,9 @@
         // --------------------------------
 
         supabaseClient
-            .channel("timer_logs_changes")
+            .channel(
+                "timer_logs_changes"
+            )
 
             .on(
                 "postgres_changes",
@@ -399,6 +829,7 @@
                 () => {
 
                     loadLogs();
+
                 }
             )
 
