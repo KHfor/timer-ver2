@@ -48,6 +48,15 @@
         }
 
 
+        .top-buttons {
+            display: flex;
+
+            gap: 8px;
+
+            align-items: center;
+        }
+
+
         button {
             padding: 10px 16px;
 
@@ -229,6 +238,18 @@
                 width: 100%;
             }
 
+
+            .top-bar {
+                align-items: flex-start;
+            }
+
+
+            .top-buttons {
+                flex-direction: column;
+
+                align-items: stretch;
+            }
+
         }
 
     </style>
@@ -243,7 +264,7 @@
 
     <h1>Timer Log</h1>
 
-    <div>
+    <div class="top-buttons">
 
         <button id="deleteOver1MinuteButton">
             Delete 1min+
@@ -377,7 +398,7 @@ function getTimerName(label) {
     if (label === "DEBUG") {
         return "DEBUG";
     }
-    
+
     return "";
 
 }
@@ -420,11 +441,15 @@ function updateCountSummary(logs) {
     logs.forEach(log => {
 
         const timerName =
-            getTimerName(log.label);
+            getTimerName(
+                log.label
+            );
 
 
         const value =
-            getCountValue(timerName);
+            getCountValue(
+                timerName
+            );
 
 
         if (value === 0) {
@@ -653,6 +678,7 @@ async function loadLogs() {
     /*
      * 同時読み込み防止
      */
+
     if (loadingLogs) {
         return;
     }
@@ -702,10 +728,6 @@ async function loadLogs() {
             );
 
 
-            /*
-             * ここではalertを出さず、
-             * 次回自動再試行する。
-             */
             return;
 
         }
@@ -790,6 +812,7 @@ async function loadLogs() {
         /*
          * 新しい順
          */
+
         logs.reverse();
 
 
@@ -888,39 +911,129 @@ async function loadLogs() {
 
 
 /* =====================================================
-   TIME LEFT が1分以上のログを削除
+   TIME LEFT → 秒数
 ===================================================== */
 
 function timeLeftToSeconds(value) {
 
-    if (!value) {
-        return 0;
-    }
-
-    const text = String(value).trim();
-
-    const parts = text.split(":");
-
-    if (parts.length !== 2) {
-        return 0;
-    }
-
-    const minutes = parseInt(parts[0], 10);
-    const seconds = parseInt(parts[1], 10);
-
     if (
-        Number.isNaN(minutes) ||
-        Number.isNaN(seconds)
+        value === null ||
+        value === undefined
     ) {
         return 0;
     }
 
-    return minutes * 60 + seconds;
+
+    const text =
+        String(value)
+            .trim()
+            .toLowerCase();
+
+
+    /*
+     * ---------------------------------
+     * 1:25
+     * 01:25
+     * 0:59
+     * ---------------------------------
+     */
+
+    if (
+        text.includes(":")
+    ) {
+
+        const parts =
+            text.split(":");
+
+
+        if (
+            parts.length === 2
+        ) {
+
+            const minutes =
+                parseInt(
+                    parts[0],
+                    10
+                );
+
+
+            const seconds =
+                parseInt(
+                    parts[1],
+                    10
+                );
+
+
+            if (
+                !Number.isNaN(minutes) &&
+                !Number.isNaN(seconds)
+            ) {
+
+                return (
+                    minutes * 60 +
+                    seconds
+                );
+
+            }
+
+        }
+
+    }
+
+
+    /*
+     * ---------------------------------
+     * 1m25s
+     * 1m 25s
+     * 01m25s
+     * ---------------------------------
+     */
+
+    const match =
+        text.match(
+            /(\d+)\s*m(?:\s*(\d+)\s*s)?/
+        );
+
+
+    if (match) {
+
+        const minutes =
+            parseInt(
+                match[1],
+                10
+            );
+
+
+        const seconds =
+            match[2]
+                ? parseInt(
+                    match[2],
+                    10
+                )
+                : 0;
+
+
+        return (
+            minutes * 60 +
+            seconds
+        );
+
+    }
+
+
+    return 0;
+
 }
 
 
+/* =====================================================
+   TIME LEFT が1分以上のログを削除
+===================================================== */
+
 document
-    .getElementById("deleteOver1MinuteButton")
+    .getElementById(
+        "deleteOver1MinuteButton"
+    )
     .addEventListener(
         "click",
         async () => {
@@ -930,14 +1043,20 @@ document
                     "TIME LEFT が1分以上のログを削除しますか？"
                 );
 
+
             if (!result) {
                 return;
             }
 
 
-            /* -----------------------------
-               まず全ログを取得
-            ----------------------------- */
+            console.log(
+                "1分以上のログを検索開始"
+            );
+
+
+            /* ---------------------------------
+               全ログ取得
+            --------------------------------- */
 
             const {
                 data,
@@ -956,51 +1075,130 @@ document
                     error
                 );
 
+
                 alert(
-                    "ログの取得に失敗しました。"
+                    "ログの取得に失敗しました。\n\n" +
+                    error.message
                 );
+
 
                 return;
             }
 
 
-            /* -----------------------------
-               1分以上のログだけ抽出
-            ----------------------------- */
+            if (!data) {
 
-            const deleteIds =
+                alert(
+                    "ログが取得できませんでした。"
+                );
+
+
+                return;
+            }
+
+
+            console.log(
+                "取得ログ:",
                 data
-                    .filter(log => {
+            );
 
-                        return (
+
+            /* ---------------------------------
+               1分以上を抽出
+            --------------------------------- */
+
+            const deleteLogs =
+                data.filter(
+                    log => {
+
+                        const seconds =
                             timeLeftToSeconds(
                                 log.remaining_formatted
-                            ) >= 60
+                            );
+
+
+                        console.log(
+                            "TIME LEFT:",
+                            log.remaining_formatted,
+                            "→",
+                            seconds,
+                            "秒"
                         );
 
-                    })
-                    .map(log => log.id);
+
+                        return (
+                            seconds >= 60
+                        );
+
+                    }
+                );
 
 
-            /* -----------------------------
-               対象がない場合
-            ----------------------------- */
+            console.log(
+                "削除対象:",
+                deleteLogs
+            );
+
+
+            /* ---------------------------------
+               対象なし
+            --------------------------------- */
 
             if (
-                deleteIds.length === 0
+                deleteLogs.length === 0
             ) {
 
                 alert(
-                    "TIME LEFT が1分以上のログはありません。"
+                    "TIME LEFT が1分以上のログはありません。\n\n" +
+                    "現在のTIME LEFTの形式を確認してください。"
                 );
+
 
                 return;
             }
 
 
-            /* -----------------------------
+            /* ---------------------------------
+               削除確認
+            --------------------------------- */
+
+            const deleteConfirm =
+                confirm(
+                    `${deleteLogs.length}件のログを削除します。\n\n` +
+                    "削除対象：\n" +
+                    deleteLogs
+                        .map(
+                            log =>
+                                `・${log.remaining_formatted}`
+                        )
+                        .join("\n")
+                );
+
+
+            if (!deleteConfirm) {
+                return;
+            }
+
+
+            /* ---------------------------------
+               IDを取得
+            --------------------------------- */
+
+            const deleteIds =
+                deleteLogs.map(
+                    log => log.id
+                );
+
+
+            console.log(
+                "削除ID:",
+                deleteIds
+            );
+
+
+            /* ---------------------------------
                削除
-            ----------------------------- */
+            --------------------------------- */
 
             const {
                 error: deleteError
@@ -1020,17 +1218,20 @@ document
                     deleteError
                 );
 
+
                 alert(
-                    "ログの削除に失敗しました。"
+                    "ログの削除に失敗しました。\n\n" +
+                    deleteError.message
                 );
+
 
                 return;
             }
 
 
-            /* -----------------------------
-               完了
-            ----------------------------- */
+            /* ---------------------------------
+               削除後に再読み込み
+            --------------------------------- */
 
             alert(
                 `${deleteIds.length}件のログを削除しました。`
@@ -1040,8 +1241,7 @@ document
             await loadLogs();
 
         }
-);    
-    
+    );
 
 
 /* =====================================================
@@ -1049,7 +1249,9 @@ document
 ===================================================== */
 
 document
-    .getElementById("clearButton")
+    .getElementById(
+        "clearButton"
+    )
     .addEventListener(
         "click",
         async () => {
@@ -1134,6 +1336,7 @@ supabaseClient
 /*
  * ネットワーク復旧時
  */
+
 window.addEventListener(
     "online",
     () => {
@@ -1151,6 +1354,7 @@ window.addEventListener(
 /*
  * ページに戻ったとき
  */
+
 document.addEventListener(
     "visibilitychange",
     () => {
@@ -1168,6 +1372,7 @@ document.addEventListener(
 /*
  * 30秒ごとに再確認
  */
+
 setInterval(
     () => {
 
